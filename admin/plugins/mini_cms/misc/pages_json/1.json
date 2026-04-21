@@ -1,0 +1,13 @@
+[
+    {
+        "name": "index",
+        "link_to_file": "none"
+    },
+    {
+        "block1_type": "text",
+        "block1": "<p>This is your first page<\/p>",
+        "block1_bg": "none",
+        "block1_text": "none",
+        "block1_bootstrap": ""
+    }
+]

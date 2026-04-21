@@ -1,0 +1,140 @@
+.block{
+    min-height:100% !important;
+}
+
+.block-row{
+    clear:both;
+    height:auto;
+}
+
+/* Aggiungi questo CSS per aprire i dropdown al passaggio del mouse */
+.navbar-nav .dropdown:hover .dropdown-menu {
+	display: block;
+}
+
+/******** DEFAULT  ***********/
+
+
+.block1.default{
+    width:100%;
+	margin: 1% auto;
+}
+
+
+.block2.default{
+    width:49%;
+	margin: 1% 1% 1% 0;
+}
+
+.block3.default{
+    width:49%;
+	margin: 1% 0 1% 1%;
+}
+
+.block4.default{
+    width:32%;
+	margin: 1% 1% 1% 0;
+}
+
+.block5.default{
+    width:32%;
+	margin: 1%;
+}
+
+.block6.default{
+    width:32%;
+	margin: 1% 0 1% 1%;
+}
+
+
+/******** VARIANT1  ***********/
+
+
+.block1.variant1{
+    width:100%;
+	margin: 1% auto;
+}
+
+
+.block2.variant1{
+    width:32%;
+	margin: 1% 1% 1% 0;
+}
+
+.block3.variant1{
+    width:32%;
+	margin: 1%;
+}
+
+.block4.variant1{
+    width:32%;
+	margin: 1% 0 1% 1%;
+}
+
+.block5.variant1{
+    width:49%;
+	margin: 1% 1% 1% 0;
+}
+
+.block6.variant1{
+    width:49%;
+	margin: 1% 0 1% 1%;
+}
+
+
+/******** VARIANT2  ***********/
+
+
+.block1.variant2{
+	width:49%;
+	margin: 1% 1% 1% 0;
+}
+
+.block2.variant2{
+	width:49%;
+	margin: 1% 0 1% 1%;
+}
+
+.block3.variant2{
+	width:100%;
+	margin: 1% auto;
+}
+
+.block4.variant2{
+	width:32%;
+	margin: 1% 1% 1% 0;
+}
+
+.block5.variant2{
+	width:32%;
+	margin: 1%;
+}
+
+.block6.variant2{
+	width:32%;
+	margin: 1% 0 1% 1%;
+}
+
+
+/******** CONTACT  ***********/
+
+.card.contact{
+	width:90% !important;
+	border:none;
+}
+
+#contact{
+	padding: 2%;;
+}
+
+.col-12.maps{
+	padding:1em !important;
+}
+
+.row.address{
+	margin-top:0 !important;
+}
+
+.maps iframe{
+	width:100% !important;
+}

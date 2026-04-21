@@ -1,0 +1,23 @@
+.header-content .logo-wrapper a img{
+    max-height:50px;
+}
+
+body{
+    background-color: #fff;;
+}
+
+.header-area{
+    background-color: #fff;
+}
+
+#home .ti{
+    font-size:2.1em
+}
+
+#dataTable_filter, #dataTable_length, .dataTable-search{
+    display:none;
+}
+
+.sidenav-profile{
+    background-color: #008db1;
+}

@@ -1,0 +1,129 @@
+
+.tagline {
+  position: relative;
+  margin-top: 0;
+}
+.tagline-text {
+  vertical-align: middle;
+}
+
+sub {
+  display: block;
+  text-align: right;
+  margin-top: -10px;
+  font-size: 11px;
+  font-style: italic;
+}
+
+ul {
+  margin: 0;
+  padding: 0;
+}
+
+.parent {
+  /* background-color: rgba(255, 255, 255, 0.2); */
+  background-color: #008db1;
+  /* margin: 50px 0; */
+  padding: 20px;
+  width:100%;
+}
+
+input {
+  border: none;
+  outline: none;
+  background-color: #ecf0f1;
+  padding: 10px;
+  color: #942A57;
+  border: 0;
+  margin: 5px 0;
+  display: block;
+  width: 100%;
+}
+
+button {
+  background-color: #ecf0f1;
+  color: #942A57;
+  border: 0;
+  padding: 18px 12px;
+  margin-left: 6px;
+  cursor: pointer;
+  outline: none;
+}
+
+button:hover {
+  background-color: #e74c3c;
+  color: #ecf0f1;
+}
+
+.gh-fork {
+  position: fixed;
+  top: 0;
+  right: 0;
+  border: 0;
+}
+
+/* dragula-specific example page styles*/
+.wrapper {
+  display: table;
+  width:100%
+}
+
+
+/* 
+.container-pages:nth-child(odd) {
+  background-color:#008db1;
+}  */
+
+/*
+ * note that styling gu-mirror directly is a bad practice because it's too generic.
+ * you're better off giving the draggable elements a unique class and styling that directly!
+ */
+.container-pages > div,
+.gu-mirror {
+  /* margin: 10px; */
+  padding: 10px;
+  /* background-color: rgba(0, 0, 0, 0.2); */
+  transition: opacity 0.4s ease-in-out;
+}
+.container-pages > div {
+  cursor: move;
+  cursor: grab;
+  cursor: -moz-grab;
+  cursor: -webkit-grab;
+}
+.gu-mirror {
+  cursor: grabbing;
+  cursor: -moz-grabbing;
+  cursor: -webkit-grabbing;
+}
+.container .ex-moved {
+  background-color: #e74c3c;
+}
+.container.ex-over {
+  background-color: rgba(255, 255, 255, 0.3);
+}
+#left-lovehandles > div,
+#right-lovehandles > div {
+  cursor: initial;
+}
+.handle {
+  padding: 0 5px;
+  margin-right: 5px;
+  background-color: rgba(0, 0, 0, 0.4);
+  cursor: move;
+}
+.image-thing {
+  margin: 20px 0;
+  display: block;
+  text-align: center;
+}
+.slack-join {
+  position: absolute;
+  font-weight: normal;
+  font-size: 14px;
+  right: 10px;
+  top: 50%;
+  margin-top: -8px;
+  line-height: 16px;
+}
+

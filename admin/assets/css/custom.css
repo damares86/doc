@@ -1,0 +1,438 @@
+
+body{
+  height: 100%;
+  width:100%;
+}
+
+.sidebar-wrapper .menu .sidebar-item.active>.sidebar-link {
+    background-color: #008db1;
+}
+
+body.theme-dark .sidebar-wrapper .menu .sidebar-item.active>.sidebar-link {
+    background-color: #008db1;
+}
+
+#main-content, .page-heading {
+    flex-grow: 0;
+}
+
+.form-check{
+    padding-left:0;
+}
+
+.upload-form .progress {
+  height: 20px;
+  border-radius: 4px;
+  margin: 10px 0;
+  background-color: #e6e8ec;
+}
+.upload-form button {
+  appearance: none;
+  border-radius: 4px;
+  font-weight: 500;
+  font-size: 14px;
+  border: 0;
+  padding: 10px 12px;
+  margin-top: 10px;
+  color: #fff;
+  cursor: pointer;
+}
+
+.upload-form button:disabled {
+  background-color: #aca7a5;
+}
+.upload-form .result {
+  padding-top: 15px;
+}
+
+.sidebar-wrapper_damares .sidebar-header img {
+  height: 2.5rem;
+  margin-right:0.5em;
+}
+
+.sidebar-wrapper_damares .sidebar-header  {
+  font-size:1.2rem;
+}
+
+#auth #auth-left .auth-logo img {
+  height: 4rem;
+}
+
+#auth #auth-left form button {
+  background-color: #008db1;
+  border-color: #007c9b;
+}
+
+#auth #auth-left form button:hover {
+  background-color: #00afdb;
+  border-color: #008db1;
+}
+
+#auth #auth-left h1{
+  color: #008db1;
+}
+
+#auth #auth-left a{
+  color: #008db1;
+}
+
+#auth #auth-left a:visited{
+  color: #008db1;
+}
+
+#auth #auth-left a:hover{
+  color: #00afdb;
+}
+
+#auth #auth-right{
+  background-image: url("../../../login/img/visual.jpg");
+  height:100%;
+}
+
+.form-check .form-check-input.remember{
+  margin-left:0;
+}
+
+#sidebar .card{
+  margin-bottom: 0 !important;
+}
+
+.sidebar-wrapper_damares .menu{
+  margin-top: 0;
+}
+
+
+.sidebar-wrapper_damares .menu .sidebar-link {
+  color:#008db1;
+  font-size:0.8rem;
+}
+
+.sidebar-wrapper_damares .menu .sidebar-item{
+  margin-top: 0;
+}
+
+.sidebar-wrapper_damares .menu .submenu_damares .submenu-item a{
+  font-size:0.8rem;   
+}
+
+.sidebar-wrapper_damares .sidebar-header {
+  padding: 1rem 2rem;
+  background-color: #f2f7ff;
+}
+
+.name h5{
+  color:#008db1;
+}
+
+#sidebar a{
+  color:#008db1;
+  border-bottom: 1px dotted;
+}
+/* 
+#main a{
+  color:#008db1;
+  border-bottom: 1px dotted;
+} */
+
+#sidebar .logo a, #main .float-end a{
+  border: 0;
+}
+
+.grid-item { width: 25%; }
+.grid-item--width2 { width: 50%; }
+
+#export_box{
+  display:none;
+}
+
+.stats-icon{
+  float:none;
+  margin:0 auto;
+}
+
+.layout-horizontal .header-top .logo img{
+  height:40px;
+}
+
+#main{
+  min-height: 0;
+}
+
+.layout-horizontal .main-navbar{
+  background-color: #008db1;
+}
+.layout-horizontal .main-navbar .submenu .submenu-group .submenu-item a {
+  color: #fff;
+}
+
+.layout-horizontal .main-navbar .submenu .submenu-group .submenu-item a:hover{
+  color:#fff;
+}
+
+.layout-horizontal .main-navbar .submenu .submenu-group .submenu-item.topbar a {
+  color: #008db1;
+}
+
+.layout-horizontal .main-navbar .submenu .submenu-group .submenu-item.topbar a:hover{
+  color:#008db1;
+}
+
+#preloader {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+#app{
+  display: none;
+}
+
+/* SIDEBAR*/
+
+.sidebar_damares {
+  width: 200px;
+  height: 100vh;
+  background-color: #fff;
+}
+.sidebar_damares a {
+  color: #008db1;
+  /* display: block; */
+  padding: 10px 0;
+  font-size: 0.9rem;
+  text-decoration: none;
+}
+.sidebar_damares a:hover {
+  text-decoration: underline;
+}
+
+.sidebar_menu{
+  padding:20px;
+}
+/* .submenu {
+  display: none;
+  padding-left: 20px;
+}
+.toggle-submenu {
+  color: #008db1;
+  cursor: pointer;
+  margin-left: auto;
+  padding: 10px;
+} */
+
+.sidebar-logo{
+  text-align: center;
+  padding:0.8em;
+  /* background-color: #f2f7ff; */
+}
+
+.sidebar-logo img{
+  width: 50%;
+}
+
+  /* Stile per il pulsante burger */
+  .burger-menu {
+    display: none;
+    background: none;
+    border: none;
+    font-size: 2em;
+    cursor: pointer;
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 1000;
+    color:#008db1;
+  }
+
+  .burger-menu:hover{
+    background-color: transparent;
+    color:#008db1
+  }
+  
+  .sidebar-wrapper_damares {
+    background-color: #fff;
+    bottom: 0;
+    height: 100vh;
+    overflow-y: auto;
+    position: fixed;
+    top: 0;
+    transition: left .5s ease-out;
+    width: 300px;
+    z-index: 10;
+  }
+
+
+  li.sidebar_li {
+    position: relative;
+    display: block;
+    padding: 10px;
+    border-bottom: 1px dotted;
+}
+
+li.sidebar li.active{
+  font-weight: bold;
+}
+
+.submenu_damares {
+    display: none;
+    position: relative;
+    left:0;
+    padding-left: 0;
+    margin-top: 10px;
+    clear: both;
+    width: 100%;
+    box-sizing: border-box;
+    border-radius:.5rem;
+}
+
+.submenu_damares.active {
+    display: block;
+}
+
+.submenu_damares li {
+    padding-left: 20px;
+}
+
+.submenu_damares li.active {
+  font-weight: bold;
+}
+
+.toggle-submenu {
+    cursor: pointer;
+    display: inline-block;
+    margin-left: 5px;
+    position: relative;
+}
+
+
+.submenu_damares.open {
+    display: block; /* Mostra il sottomenu quando ha la classe open */
+}
+
+.menu-link.disabled, .sidebar-link.disabled {
+  pointer-events: none; /* Disabilita il click */
+}
+
+.alert-dismissible .btn-close:hover{
+  background-color: #fff;
+}
+
+.form-check .form-check-input.nomargin{
+  margin-left:0;
+}
+
+.highlight-background{
+  background-color: #dcf8ff; /* Cambia il colore di sfondo secondo le tue preferenze */
+}
+
+
+
+/* Stile base per le label */
+.color-label {
+  display: inline-block;
+  width: 50px;
+  /* height: 50px; */
+  cursor: pointer;
+  position: relative;
+  border: 2px solid transparent;
+  border-radius: 5px;
+  transition: border-color 0.3s ease;
+  text-align: center; /* Centra il testo orizzontalmente */
+  line-height: 50px;  /* Centra il contenuto verticalmente */
+  font-size: 16px;    /* Dimensione uniforme del testo */
+  margin: 0 3px;
+}
+
+/* Stile per le label con il testo "None" */
+.color-label[for="none"] {
+  background-color: transparent;
+  border: 1px solid #ccc; /* Per rendere evidente il bordo */
+  color: #000; /* Colore del testo "None" */
+}
+
+/* Stile per la spunta (inizialmente nascosta) */
+.color-label .checkmark {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 20px;
+  display: none;
+  color: white;
+}
+
+/* Quando il radio button è selezionato, cambia il bordo */
+input[type="radio"]:checked + .color-label {
+  border-color: #000; /* Colore del bordo selezionato */
+}
+
+/* Mostra la spunta quando il radio button è selezionato */
+input[type="radio"]:checked + .color-label .checkmark {
+  display: block;
+  content: "✔"; /* Può essere un'icona o una scritta */
+  color: white;  /* Colore della spunta */
+}
+
+/* Hover per un feedback visivo */
+.color-label:hover {
+  border-color: #777;
+}
+
+.CodeMirror {
+  height: 500px; /* Imposta l'altezza che preferisci */
+  font-size:0.7em;
+}
+
+
+
+@media screen and (max-width: 1199px) {
+
+  .burger-menu {
+    display: block;
+  }
+
+  .menu-link.disabled {
+    pointer-events:all; /* Disabilita il click */
+  }
+
+  #side_damares {
+    position: fixed;
+    width: 250px;
+    height: 100%;
+    background: #fff;
+    z-index: 999;
+    transform: translateX(-550px);
+    transition: transform 0.3s ease;
+  }
+
+  #side_damares.active {
+    transform: translateX(0);
+  }
+
+  #side_damares.sidebar-wrapper_damares {
+    height: 100%;
+    overflow-y: auto;
+  }
+
+
+  .layout-horizontal .main-navbar ul .menu-link {
+    color: #008db1 !important;
+    
+  }
+  .layout-horizontal .main-navbar{
+    background-color: #fff;
+  }
+  .layout-horizontal .main-navbar .submenu .submenu-group .submenu-item a {
+    color: #008db1;
+  }
+  
+  .layout-horizontal .main-navbar .submenu .submenu-group .submenu-item a:hover{
+    color:#008db1;
+  }
+}

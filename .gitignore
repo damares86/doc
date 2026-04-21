@@ -1,0 +1,7 @@
+admin/plugins/base_module/*
+# !admin/plugins/.gitkeep
+admin/class/Database.php
+admin/inc/class_initialize.php
+admin/core/prefix.php
+admin/prj/*
+# todo.txt

@@ -1,0 +1,228 @@
+.block-row {
+    display: flex;
+    align-items: stretch; /* Fa sì che tutti i div abbiano la stessa altezza */
+    flex-wrap: wrap; /* Permette ai div di andare a capo se necessario */
+    /*gap: 1rem;*/ /* Spazio tra i blocchi */
+}
+
+.block {
+    /* min-height: 200px;  */
+    border-radius: 5px;
+    padding: 1em;
+    flex-grow: 0; /* Evita che i blocchi crescano in larghezza */
+    flex-shrink: 0; /* Evita che i blocchi si restringano */
+    flex-basis: auto; /* Mantiene la larghezza definita nel CSS */
+    width: auto; /* Aggiunge la larghezza definita */
+    float: none; /* Rimuove il float per evitare conflitti con flex */
+}
+
+#adminBar{
+    height:2em;
+	width:100%;
+	background-color:#008db1;
+	position:fixed;
+	top:0;
+	z-index:1000;
+	padding: 0em 3em;
+	text-align: right;
+	margin: 0;
+}
+
+#adminBar a{
+	color:#fff;
+}
+
+
+header{
+	background-repeat: no-repeat;
+	background-size: cover;
+}
+
+header h1{
+	color:#fff;
+}
+
+header p{
+	color:#fff;
+}
+#copyright {
+	color: #aaa;
+	padding: 4em 0 0 0;
+	text-align: center;
+}
+
+.copyright{
+	color: #aaa;
+	text-align: center;
+}
+
+img.img-logo{
+	width: 30%;
+}
+
+
+/******** DEFAULT  ***********/
+
+
+.block1.default{
+    width:100%;
+	margin: 1% auto;
+}
+
+
+.block2.default{
+    width:49%;
+	margin: 1% 1% 1% 0;
+}
+
+.block3.default{
+    width:49%;
+	margin: 1% 0 1% 1%;
+}
+
+.block4.default{
+    width:32%;
+	margin: 1% 1% 1% 0;
+}
+
+.block5.default{
+    width:32%;
+	margin: 1%;
+}
+
+.block6.default{
+    width:32%;
+	margin: 1% 0 1% 1%;
+}
+
+
+/******** VARIANT1  ***********/
+
+
+.block1.variant1{
+    width:100%;
+	margin: 1% auto;
+}
+
+
+.block2.variant1{
+    width:32%;
+	margin: 1% 1% 1% 0;
+}
+
+.block3.variant1{
+    width:32%;
+	margin: 1%;
+}
+
+.block4.variant1{
+    width:32%;
+	margin: 1% 0 1% 1%;
+}
+
+.block5.variant1{
+    width:49%;
+	margin: 1% 1% 1% 0;
+}
+
+.block6.variant1{
+    width:49%;
+	margin: 1% 0 1% 1%;
+}
+
+
+/******** VARIANT2  ***********/
+
+
+.block1.variant2{
+	width:49%;
+	margin: 1% 1% 1% 0;
+}
+
+.block2.variant2{
+	width:49%;
+	margin: 1% 0 1% 1%;
+}
+
+.block3.variant2{
+	width:100%;
+	margin: 1% auto;
+}
+
+.block4.variant2{
+	width:32%;
+	margin: 1% 1% 1% 0;
+}
+
+.block5.variant2{
+	width:32%;
+	margin: 1%;
+}
+
+.block6.variant2{
+	width:32%;
+	margin: 1% 0 1% 1%;
+}
+
+
+/******** CONTACT  ***********/
+
+.card.contact{
+	width:90% !important;
+	border:none;
+}
+
+#contact{
+	padding: 2%;;
+}
+
+.col-12.maps{
+	padding:1em !important;
+}
+
+.row.address{
+	margin-top:0 !important;
+}
+
+.maps iframe{
+	width:100% !important;
+}
+
+
+/******** MEDIA QUERIES  ***********/
+
+
+@media (max-width:980px){
+
+	.block{
+		width:100% !important;
+		margin:0.6em 0 !important;
+	}
+
+}
+
+
+@media (max-width:991px){
+
+	img.img-logo{
+		width:50%;
+	}
+
+}
+
+
+@media (max-width:568px){
+
+	img.img-logo{
+		width:60%;
+	}
+
+}
+
+@media (max-width:350px){
+
+	img.img-logo{
+		width:80%;
+	}
+
+}

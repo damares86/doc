@@ -1,0 +1,20 @@
+[
+  {
+    "name": "contact",
+    "link_to_file": "none"
+  },
+  {
+    "block1_type": "text",
+    "block1": "<p>Your contacts</p>",
+    "block1_bg": "none",
+    "block1_text": "none",
+    "block1_bootstrap": ""
+  },
+  {
+    "block2_type": "text",
+    "block2": "<p><iframe style=\"border: 0;\" src=\"https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d14183.047591625556!2d7.335330228480579!3d45.04540803712066!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x4788383d58f5958f%3A0xd719ec71230adf34!2s10094%20Giaveno%20TO!5e1!3m2!1sit!2sit!4v1729696330710!5m2!1sit!2sit\" width=\"600\" height=\"450\" allowfullscreen=\"\" loading=\"lazy\"></iframe></p>",
+    "block2_bg": "none",
+    "block2_text": "none",
+    "block2_bootstrap": ""
+  }
+]
