@@ -28,6 +28,7 @@ $label_damares = "Damares" ;
 $label_booking = "Prenotazioni";
 $label_all_bookings = "Vedi prenotazioni";
 $label_add_booking = "Aggiungi prenotazione";
+$label_all_exceptions = "Eccezioni";
 
 //////  COMMON  //////
 

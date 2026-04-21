@@ -1,0 +1,212 @@
+<div class="page-heading">
+    <div class="page-title">
+        <div class="row">
+            <div class="col-12 col-md-6 order-md-1 order-last">
+                <h3 class="d-inline">Impostazioni prenotazioni</h3>
+            </div>
+            <div class="col-12 col-md-6 order-md-2 order-first">
+                <nav aria-label="breadcrumb" class="breadcrumb-header float-start float-lg-end">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item">
+                            <a href="index.php"><?= $common_dashboard ?></a>
+                        </li>
+                        <li class="breadcrumb-item active" aria-current="page">
+                            Impostazioni prenotazioni
+                        </li>
+                    </ol>
+                </nav>
+            </div>
+        </div>
+    </div>
+    <br>
+    <section class="section">
+        <div class="row">
+            <div class="col-md-8 col-12">
+                <div class="card shadow">
+                    <div class="card-header">
+                        <h4 class="card-title">Orari ambulatorio</h4>
+                    </div>
+                    <div class="card-content">
+                        <div class="card-body">
+                            <form class="form form-horizontal" action="core/mngBookings.php" method="POST" data-parsley-validate>
+                                <div class="form-body">
+                                    <div class="row">
+                                        <div class="col-md-4 border-bottom">
+                                            <label><b>Lunedì</b> </label>
+                                        </div>
+                                        <div class="col-md-4 border-bottom">
+                                            <div class="form-group">
+                                                <label>Inizio</label>
+                                                <input type="time" class="form-control">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4 border-bottom">
+                                            <div class="form-group">
+                                                <label>Fine</label>
+                                                <input type="time" class="form-control">
+                                            </div>
+                                        </div>
+
+                                        <div class="col-md-4 pt-3 border-bottom">
+                                            <label><b>Martedì</b> </label>
+                                        </div>
+                                        <div class="col-md-4 pt-3 border-bottom">
+                                            <div class="form-group">
+                                                <label>Inizio</label>
+                                                <input type="time" class="form-control">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4 pt-3 border-bottom">
+                                            <div class="form-group">
+                                                <label>Fine</label>
+                                                <input type="time" class="form-control">
+                                            </div>
+                                        </div>
+
+                                        <div class="col-md-4 pt-3 border-bottom">
+                                            <label><b>Mercoledì</b> </label>
+                                        </div>
+                                        <div class="col-md-4 pt-3 border-bottom">
+                                            <div class="form-group">
+                                                <label>Inizio</label>
+                                                <input type="time" class="form-control">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4 pt-3 border-bottom">
+                                            <div class="form-group">
+                                                <label>Fine</label>
+                                                <input type="time" class="form-control">
+                                            </div>
+                                        </div>
+
+                                        <div class="col-md-4 pt-3 border-bottom">
+                                            <label><b>Giovedì</b> </label>
+                                        </div>
+                                        <div class="col-md-4 pt-3 border-bottom">
+                                            <div class="form-group">
+                                                <label>Inizio</label>
+                                                <input type="time" class="form-control">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4 pt-3 border-bottom">
+                                            <div class="form-group">
+                                                <label>Fine</label>
+                                                <input type="time" class="form-control">
+                                            </div>
+                                        </div>
+
+                                        <div class="col-md-4 p-3">
+                                            <label><b>Venerdì</b> </label>
+                                        </div>
+                                        <div class="col-md-4 p-3">
+                                            <div class="form-group">
+                                                <label>Inizio</label>
+                                                <input type="time" class="form-control">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4 p-3">
+                                            <div class="form-group">
+                                                <label>Fine</label>
+                                                <input type="time" class="form-control">
+                                            </div>
+                                        </div>
+
+                                        <input type="hidden" name="timetable">
+
+                                        <div class="col-12 d-flex justify-content-end">
+                                            <button type="submit" class="btn btn-primary me-1 mb-1 shadow">
+                                                <?= $common_submit ?>
+                                            </button>
+
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card shadow">
+                    <div class="card-header">
+                        <h4 class="card-title">Impostazioni</h4>
+                    </div>
+                    <div class="card-content">
+                        <div class="card-body">
+                            <form class="form form-horizontal" action="core/mngBookings.php" method="POST" data-parsley-validate>
+                                <div class="form-body">
+                                    <div class="row">
+                                        <?php
+                                        $doc->table = "doc_settings" ;
+                                        $doc->name = "slot_length";
+                                        $stmt = $doc->showAllWhere('id', ['name']);
+                                        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+                                        $slot = $row['value'];
+                                        ?>
+                                        <div class="col-md-3">
+                                            <label>Durata visite <span class="text-danger">*</span></label>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-group">
+                                                <div class="form-check mandatory">
+                                                    <div class="position-relative">
+                                                        <input type="number" class="form-control" name="slot" data-parsley-required="true" value="<?= $slot?>"/>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            &nbsp;
+                                        </div>
+
+                                        <?php
+                                        $doc->name = "email";
+                                        $stmt = $doc->showAllWhere('id', ['name']);
+                                        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+                                        $email = $row['value'];
+                                        ?>
+
+                                        <div class="col-md-3 p-3">
+                                            <label>Email per comunicazioni <span class="text-danger">*</span></label>
+                                        </div>
+                                        <div class="col-md-9 p-3">
+                                            <div class="form-group has-icon-left">
+                                                <div class="form-check mandatory">
+                                                    <div class="position-relative">
+                                                        <input type="email" class="form-control" placeholder="Email" id="first-name-icon" name="noreply" data-parsley-required="true" value="<?= $email ?>" />
+                                                        <div class="form-control-icon">
+                                                            <i class="bi bi-envelope"></i>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <input type="hidden" name="timetable">
+
+                                        <div class="col-12 d-flex justify-content-end">
+                                            <button type="submit" class="btn btn-primary me-1 mb-1 shadow">
+                                                <?= $common_submit ?>
+                                            </button>
+
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-4 col-12">
+                <div class="card shadow">
+                    <h4 class="card-title px-4 pt-3"><?= $common_info ?></h4>
+                    <div class="card-content px-5 pb-4">
+                        <ul>
+                            <li><a href="http://dmweblab.com/portal/manual.php?prod=1&page=11" target="_blank"><?= $common_see_guide ?></a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
