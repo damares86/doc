@@ -3,7 +3,6 @@ require "core/prefix.php";
 require __DIR__ . "/damares_version.php";
 
 spl_autoload_register('autoloader');
-
 function autoloader($class)
 {
     include("class/$class.php");

@@ -23,14 +23,13 @@ class AccountRoles extends Common{
                 WHERE account_id = :account_id
                 ORDER BY role_id ASC";
         $stmt = $this->conn->prepare($query);
-        
+
         $stmt->bindParam(":account_id",$this->account_id);
         
         $stmt->execute();
         
         
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
-
     
         if($stmt){
             return $this->role_id = $row['role_id'];

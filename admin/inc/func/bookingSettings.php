@@ -1,3 +1,10 @@
+<?php
+
+
+
+
+?>
+
 <div class="page-heading">
     <div class="page-title">
         <div class="row">
@@ -28,92 +35,49 @@
                     </div>
                     <div class="card-content">
                         <div class="card-body">
-                            <form class="form form-horizontal" action="core/mngBookings.php" method="POST" data-parsley-validate>
+                            <form class="form form-horizontal" action="core/mngBooking.php" method="POST" data-parsley-validate>
                                 <div class="form-body">
                                     <div class="row">
-                                        <div class="col-md-4 border-bottom">
-                                            <label><b>Lunedì</b> </label>
-                                        </div>
-                                        <div class="col-md-4 border-bottom">
-                                            <div class="form-group">
-                                                <label>Inizio</label>
-                                                <input type="time" class="form-control">
-                                            </div>
-                                        </div>
-                                        <div class="col-md-4 border-bottom">
-                                            <div class="form-group">
-                                                <label>Fine</label>
-                                                <input type="time" class="form-control">
-                                            </div>
-                                        </div>
+                                        <?php
 
-                                        <div class="col-md-4 pt-3 border-bottom">
-                                            <label><b>Martedì</b> </label>
-                                        </div>
-                                        <div class="col-md-4 pt-3 border-bottom">
-                                            <div class="form-group">
-                                                <label>Inizio</label>
-                                                <input type="time" class="form-control">
-                                            </div>
-                                        </div>
-                                        <div class="col-md-4 pt-3 border-bottom">
-                                            <div class="form-group">
-                                                <label>Fine</label>
-                                                <input type="time" class="form-control">
-                                            </div>
-                                        </div>
+                                        $days = [
+                                            1 => "Lunedì",
+                                            2 => "Martedì",
+                                            3 => "Mercoledì",
+                                            4 => "Giovedì",
+                                            5 => "Venerdì"
+                                        ];
 
-                                        <div class="col-md-4 pt-3 border-bottom">
-                                            <label><b>Mercoledì</b> </label>
-                                        </div>
-                                        <div class="col-md-4 pt-3 border-bottom">
-                                            <div class="form-group">
-                                                <label>Inizio</label>
-                                                <input type="time" class="form-control">
-                                            </div>
-                                        </div>
-                                        <div class="col-md-4 pt-3 border-bottom">
-                                            <div class="form-group">
-                                                <label>Fine</label>
-                                                <input type="time" class="form-control">
-                                            </div>
-                                        </div>
+                                        $doc->table = 'doc_timetable';
 
-                                        <div class="col-md-4 pt-3 border-bottom">
-                                            <label><b>Giovedì</b> </label>
-                                        </div>
-                                        <div class="col-md-4 pt-3 border-bottom">
-                                            <div class="form-group">
-                                                <label>Inizio</label>
-                                                <input type="time" class="form-control">
-                                            </div>
-                                        </div>
-                                        <div class="col-md-4 pt-3 border-bottom">
-                                            <div class="form-group">
-                                                <label>Fine</label>
-                                                <input type="time" class="form-control">
-                                            </div>
-                                        </div>
+                                        $stmt_time = $doc->showAll('id');
+                                        while ($row_time = $stmt_time->fetch(PDO::FETCH_ASSOC)) {
 
-                                        <div class="col-md-4 p-3">
-                                            <label><b>Venerdì</b> </label>
-                                        </div>
-                                        <div class="col-md-4 p-3">
-                                            <div class="form-group">
-                                                <label>Inizio</label>
-                                                <input type="time" class="form-control">
+                                            extract($row_time);
+                                            $day_name = $days[$row_time['weekday']];
+                                        ?>
+                                            <div class="col-md-4 border-bottom">
+                                                <label><b><?= $day_name ?></b> </label>
                                             </div>
-                                        </div>
-                                        <div class="col-md-4 p-3">
-                                            <div class="form-group">
-                                                <label>Fine</label>
-                                                <input type="time" class="form-control">
+                                            <div class="col-md-4 border-bottom">
+                                                <div class="form-group">
+                                                    <label>Inizio</label>
+                                                    <input type="time" class="form-control" name="start_<?= $row_time['weekday'] ?>" value="<?= $row_time['start_time'] ?>">
+                                                </div>
                                             </div>
-                                        </div>
+                                            <div class="col-md-4 border-bottom">
+                                                <div class="form-group">
+                                                    <label>Fine</label>
+                                                    <input type="time" class="form-control" name="end_<?= $row_time['weekday'] ?>" value="<?= $row_time['end_time'] ?>">
+                                                </div>
+                                            </div>
+                                        <?php
+                                        }
+                                        ?>
 
-                                        <input type="hidden" name="timetable">
+                                        <input type="hidden" name="operation" value="timetable">
 
-                                        <div class="col-12 d-flex justify-content-end">
+                                        <div class="col-12 d-flex justify-content-end mt-3">
                                             <button type="submit" class="btn btn-primary me-1 mb-1 shadow">
                                                 <?= $common_submit ?>
                                             </button>
@@ -132,11 +96,11 @@
                     </div>
                     <div class="card-content">
                         <div class="card-body">
-                            <form class="form form-horizontal" action="core/mngBookings.php" method="POST" data-parsley-validate>
+                            <form class="form form-horizontal" action="core/mngBooking.php" method="POST" data-parsley-validate>
                                 <div class="form-body">
                                     <div class="row">
                                         <?php
-                                        $doc->table = "doc_settings" ;
+                                        $doc->table = "doc_settings";
                                         $doc->name = "slot_length";
                                         $stmt = $doc->showAllWhere('id', ['name']);
                                         $row = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -149,7 +113,7 @@
                                             <div class="form-group">
                                                 <div class="form-check mandatory">
                                                     <div class="position-relative">
-                                                        <input type="number" class="form-control" name="slot" data-parsley-required="true" value="<?= $slot?>"/>
+                                                        <input type="number" class="form-control" name="slot_length" data-parsley-required="true" value="<?= $slot ?>" />
                                                     </div>
                                                 </div>
                                             </div>
@@ -172,7 +136,7 @@
                                             <div class="form-group has-icon-left">
                                                 <div class="form-check mandatory">
                                                     <div class="position-relative">
-                                                        <input type="email" class="form-control" placeholder="Email" id="first-name-icon" name="noreply" data-parsley-required="true" value="<?= $email ?>" />
+                                                        <input type="email" class="form-control" placeholder="Email" id="first-name-icon" name="email" data-parsley-required="true" value="<?= $email ?>" />
                                                         <div class="form-control-icon">
                                                             <i class="bi bi-envelope"></i>
                                                         </div>
@@ -181,7 +145,7 @@
                                             </div>
                                         </div>
 
-                                        <input type="hidden" name="timetable">
+                                        <input type="hidden" name="operation" value="settings">
 
                                         <div class="col-12 d-flex justify-content-end">
                                             <button type="submit" class="btn btn-primary me-1 mb-1 shadow">

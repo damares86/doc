@@ -1,4 +1,4 @@
-<?php 
+<?php
 
 ##############    Damares    ###############
 #                                          #
@@ -8,12 +8,32 @@
 #                                          #
 ############################################
 
-class Doc extends Common{
+class Doc extends Common
+{
 
-    public $name ;
-    public $value ; 
-    
+    public $name;
+    public $value;
+    public $weekday ;
+    public $start_time ;
+    public $end_time ;
 
+
+    function updateValue()
+    {
+
+
+        $query = "UPDATE " . $this->prx . $this->table . "
+        SET  value = :value  WHERE name = :name";
+
+        $stmt = $this->conn->prepare($query);
+
+        $stmt->bindParam(":value", $this->value);
+        $stmt->bindParam(":name", $this->name);
+
+        if ($stmt->execute()) {
+            return true;
+        } else {
+            return false;
+        }
+    }
 }
-
-?>

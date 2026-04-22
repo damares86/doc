@@ -57,7 +57,6 @@ if($email_exists && password_verify($postpass,$auth->password)){
     $_SESSION['rolename'] = $role->showRolenameById();
     $_SESSION['username'] = $auth->username;
     $_SESSION['avatar'] = $auth->avatar;
-    
     // update the login log time
     $time=date("Y-m-d G:i:s");
     $auth->updateLog($time);
