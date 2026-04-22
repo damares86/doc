@@ -39,8 +39,6 @@ require __DIR__ . "/config.php";
   <link rel="stylesheet" href="assets/extensions/choices.js/public/assets/styles/choices.css" />
   <link rel="stylesheet" href="assets/css/pages/buttons.dataTables.min.css">
 
-
-
   <?php
 
   foreach (glob("assets/css/*.css") as $row) {
