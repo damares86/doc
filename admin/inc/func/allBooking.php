@@ -1,30 +1,37 @@
-<script src='script/index.global.js'></script>
-<script src='script/locales-all.global.js'></script>
+<?php
 
-<div class="card">
 
-  <div class="card-header text-center">
-    <div id='calendar'></div>
+?>
+
+<div class="page-title">
+  <div class="row">
+    <div class="col-12 col-md-6 order-md-1 order-last">
+      <h3>Visualizzazione prenotazioni</h3>
+    </div>
+    <div class="col-12 col-md-6 order-md-2 order-first">
+      <nav aria-label="breadcrumb" class="breadcrumb-header float-start float-lg-end">
+        <ol class="breadcrumb">
+          <li class="breadcrumb-item">
+            <a href="index.php"><?= $common_dashboard ?></a>
+          </li>
+          <li class="breadcrumb-item active" aria-current="page">
+            Visualizzazione prenotazioni
+          </li>
+        </ol>
+      </nav>
+    </div>
   </div>
 </div>
+<br>
 
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-
-    var calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
-        initialView: 'dayGridMonth',
-
-        events: 'core/api_bookings.php',
-
-        eventClick: function(info) {
-            alert(
-                "Prenotazione:\n" +
-                info.event.title + "\n" +
-                info.event.start.toLocaleString()
-            );
-        }
-    });
-
-    calendar.render();
-});
-</script>
+<!-- Basic Tables start -->
+<section class="section">
+  <div class="card shadow">
+    <div class="card-header">
+      <h3>Prenotazioni</h3>
+    </div>
+    <div class="card-body">
+      ciao
+    </div>
+  </div>
+</section>

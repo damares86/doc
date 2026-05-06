@@ -1,11 +1,11 @@
 -- phpMyAdmin SQL Dump
--- version 5.2.1deb3
+-- version 5.2.1
 -- https://www.phpmyadmin.net/
 --
--- Host: localhost:3306
--- Creato il: Apr 22, 2026 alle 07:42
--- Versione del server: 8.0.43-0ubuntu0.24.04.2
--- Versione PHP: 8.3.6
+-- Host: 127.0.0.1
+-- Creato il: Mag 06, 2026 alle 16:37
+-- Versione del server: 10.4.32-MariaDB
+-- Versione PHP: 8.2.12
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -28,15 +28,15 @@ SET time_zone = "+00:00";
 --
 
 CREATE TABLE `accounts` (
-  `id` int NOT NULL,
-  `username` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `password` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `email` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `avatar` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT 'default.png',
-  `details` text COLLATE utf8mb4_unicode_ci,
-  `details_opt` text COLLATE utf8mb4_unicode_ci,
-  `auth_token` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT 'none',
-  `last_login` datetime DEFAULT CURRENT_TIMESTAMP
+  `id` int(11) NOT NULL,
+  `username` varchar(255) DEFAULT NULL,
+  `password` varchar(255) NOT NULL,
+  `email` varchar(255) NOT NULL,
+  `avatar` varchar(255) DEFAULT 'default.png',
+  `details` text DEFAULT NULL,
+  `details_opt` text DEFAULT NULL,
+  `auth_token` varchar(255) DEFAULT 'none',
+  `last_login` datetime DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -44,70 +44,28 @@ CREATE TABLE `accounts` (
 --
 
 INSERT INTO `accounts` (`id`, `username`, `password`, `email`, `avatar`, `details`, `details_opt`, `auth_token`, `last_login`) VALUES
-(1, 'dmweblab', '$2y$10$EibgaewcRGXQhrMQswfqRuJQeWKMkGxHcWC62HV1g39CmtuU3lG9.', 'davidemasera@gmail.com', 'sd.png', NULL, NULL, 'acaa65bf2d3a3bf25616f9998bdadb6de2970365bb', '2026-04-22 06:36:25'),
+(1, 'dmweblab', '$2y$10$EibgaewcRGXQhrMQswfqRuJQeWKMkGxHcWC62HV1g39CmtuU3lG9.', 'davidemasera@gmail.com', 'sd.png', NULL, NULL, 'acaa65bf2d3a3bf25616f9998bdadb6d7e92c97cb8', '2026-05-06 16:36:43'),
 (2, 'admin', '$2y$10$ox88LdYM2aFpxP63jJma6.jPi.eCRmgpqQpaQPLtje85sZGvLSf/.', 'dmweblab86@gmail.com', 'default.png', NULL, NULL, 'none', '2026-04-17 11:14:05');
 
 -- --------------------------------------------------------
 
 --
--- Struttura della tabella `accountsRoles`
+-- Struttura della tabella `accountsroles`
 --
 
-CREATE TABLE `accountsRoles` (
-  `id` int NOT NULL,
-  `account_id` int NOT NULL,
-  `role_id` int NOT NULL
+CREATE TABLE `accountsroles` (
+  `id` int(11) NOT NULL,
+  `account_id` int(11) NOT NULL,
+  `role_id` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
--- Dump dei dati per la tabella `accountsRoles`
+-- Dump dei dati per la tabella `accountsroles`
 --
 
-INSERT INTO `accountsRoles` (`id`, `account_id`, `role_id`) VALUES
+INSERT INTO `accountsroles` (`id`, `account_id`, `role_id`) VALUES
 (1, 1, 1),
 (2, 2, 2);
-
--- --------------------------------------------------------
-
---
--- Struttura della tabella `calendar_cat`
---
-
-CREATE TABLE `calendar_cat` (
-  `id` int NOT NULL,
-  `cat_name` varchar(255) NOT NULL,
-  `cat_color` varchar(7) DEFAULT '#008db1'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
---
--- Dump dei dati per la tabella `calendar_cat`
---
-
-INSERT INTO `calendar_cat` (`id`, `cat_name`, `cat_color`) VALUES
-(1, 'default', '#008db1');
-
--- --------------------------------------------------------
-
---
--- Struttura della tabella `calendar_events`
---
-
-CREATE TABLE `calendar_events` (
-  `id` int NOT NULL,
-  `title` varchar(255) NOT NULL,
-  `start` datetime NOT NULL,
-  `end` datetime NOT NULL,
-  `note` text,
-  `url` varchar(255) DEFAULT NULL,
-  `cat_id` int DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
---
--- Dump dei dati per la tabella `calendar_events`
---
-
-INSERT INTO `calendar_events` (`id`, `title`, `start`, `end`, `note`, `url`, `cat_id`) VALUES
-(2, 'Davide Masera', '2026-04-22 12:00:00', '2026-04-22 13:00:00', NULL, '3497408129', 1);
 
 -- --------------------------------------------------------
 
@@ -116,12 +74,13 @@ INSERT INTO `calendar_events` (`id`, `title`, `start`, `end`, `note`, `url`, `ca
 --
 
 CREATE TABLE `doc_bookings` (
-  `id` int NOT NULL,
-  `name` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
-  `email` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
-  `phone` varchar(20) COLLATE utf8mb4_general_ci NOT NULL,
+  `id` int(11) NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `email` varchar(255) NOT NULL,
+  `phone` varchar(20) NOT NULL,
+  `notes` text NOT NULL,
   `slot_booked` datetime NOT NULL,
-  `token` varchar(255) COLLATE utf8mb4_general_ci NOT NULL
+  `token` varchar(255) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -131,9 +90,9 @@ CREATE TABLE `doc_bookings` (
 --
 
 CREATE TABLE `doc_settings` (
-  `id` int NOT NULL,
-  `name` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
-  `value` varchar(255) COLLATE utf8mb4_general_ci NOT NULL
+  `id` int(11) NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `value` varchar(255) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
@@ -151,8 +110,8 @@ INSERT INTO `doc_settings` (`id`, `name`, `value`) VALUES
 --
 
 CREATE TABLE `doc_timetable` (
-  `id` int NOT NULL,
-  `weekday` int NOT NULL,
+  `id` int(11) NOT NULL,
+  `weekday` int(11) NOT NULL,
   `start_time` time NOT NULL,
   `end_time` time NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -175,12 +134,12 @@ INSERT INTO `doc_timetable` (`id`, `weekday`, `start_time`, `end_time`) VALUES
 --
 
 CREATE TABLE `doc_timetable_exception` (
-  `id` int NOT NULL,
+  `id` int(11) NOT NULL,
   `day` date NOT NULL,
-  `available` int NOT NULL DEFAULT '0',
+  `available` int(11) NOT NULL DEFAULT 0,
   `start_time` time DEFAULT NULL,
   `end_time` time DEFAULT NULL,
-  `slot` int DEFAULT NULL
+  `slot` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
@@ -190,9 +149,9 @@ CREATE TABLE `doc_timetable_exception` (
 --
 
 CREATE TABLE `files` (
-  `id` int NOT NULL,
-  `filename` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `label` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL
+  `id` int(11) NOT NULL,
+  `filename` varchar(255) NOT NULL,
+  `label` varchar(255) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -202,9 +161,9 @@ CREATE TABLE `files` (
 --
 
 CREATE TABLE `home` (
-  `id` int NOT NULL,
-  `content` text COLLATE utf8mb4_unicode_ci,
-  `size` int NOT NULL
+  `id` int(11) NOT NULL,
+  `content` text DEFAULT NULL,
+  `size` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -223,8 +182,8 @@ INSERT INTO `home` (`id`, `content`, `size`) VALUES
 --
 
 CREATE TABLE `password_reset_temp` (
-  `email` varchar(250) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `token` varchar(250) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `email` varchar(250) NOT NULL,
+  `token` varchar(250) NOT NULL,
   `expDate` datetime NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -235,11 +194,11 @@ CREATE TABLE `password_reset_temp` (
 --
 
 CREATE TABLE `plugins` (
-  `id` int NOT NULL,
-  `pluginname` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `description` text COLLATE utf8mb4_unicode_ci NOT NULL,
-  `installed` int DEFAULT '0',
-  `active` int DEFAULT '0'
+  `id` int(11) NOT NULL,
+  `pluginname` varchar(255) NOT NULL,
+  `description` text NOT NULL,
+  `installed` int(11) DEFAULT 0,
+  `active` int(11) DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -260,9 +219,9 @@ INSERT INTO `plugins` (`id`, `pluginname`, `description`, `installed`, `active`)
 --
 
 CREATE TABLE `roles` (
-  `id` int NOT NULL,
-  `rolename` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `redirect` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT 'none'
+  `id` int(11) NOT NULL,
+  `rolename` varchar(255) NOT NULL,
+  `redirect` varchar(255) DEFAULT 'none'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -276,63 +235,63 @@ INSERT INTO `roles` (`id`, `rolename`, `redirect`) VALUES
 -- --------------------------------------------------------
 
 --
--- Struttura della tabella `rolesSection`
+-- Struttura della tabella `rolessection`
 --
 
-CREATE TABLE `rolesSection` (
-  `id` int NOT NULL,
-  `section_id` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `role_id` int DEFAULT NULL
+CREATE TABLE `rolessection` (
+  `id` int(11) NOT NULL,
+  `section_id` varchar(255) NOT NULL,
+  `role_id` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
--- Dump dei dati per la tabella `rolesSection`
+-- Dump dei dati per la tabella `rolessection`
 --
 
-INSERT INTO `rolesSection` (`id`, `section_id`, `role_id`) VALUES
+INSERT INTO `rolessection` (`id`, `section_id`, `role_id`) VALUES
 (1, '1,2,3,4,5,6,7,8,9', 1),
 (2, '1,2,3', 2);
 
 -- --------------------------------------------------------
 
 --
--- Struttura della tabella `rolesSectionChild`
+-- Struttura della tabella `rolessectionchild`
 --
 
-CREATE TABLE `rolesSectionChild` (
-  `id` int NOT NULL,
-  `section_id` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `role_id` int DEFAULT NULL
+CREATE TABLE `rolessectionchild` (
+  `id` int(11) NOT NULL,
+  `section_id` varchar(255) NOT NULL,
+  `role_id` int(11) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
--- Dump dei dati per la tabella `rolesSectionChild`
+-- Dump dei dati per la tabella `rolessectionchild`
 --
 
-INSERT INTO `rolesSectionChild` (`id`, `section_id`, `role_id`) VALUES
+INSERT INTO `rolessectionchild` (`id`, `section_id`, `role_id`) VALUES
 (1, '1,2,3,4,5,6,7,8,9,10,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23, 25, 26,27,28,28,29,30,31', 1),
 (2, '1,2,3,4,5,6,7,8,9,10', 2);
 
 -- --------------------------------------------------------
 
 --
--- Struttura della tabella `sectionChild`
+-- Struttura della tabella `sectionchild`
 --
 
-CREATE TABLE `sectionChild` (
-  `id` int NOT NULL,
-  `link` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `label` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `icon` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `parent_id` int NOT NULL,
-  `show_menu` int DEFAULT '1'
+CREATE TABLE `sectionchild` (
+  `id` int(11) NOT NULL,
+  `link` varchar(255) NOT NULL,
+  `label` varchar(255) NOT NULL,
+  `icon` varchar(255) NOT NULL,
+  `parent_id` int(11) NOT NULL,
+  `show_menu` int(11) DEFAULT 1
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
--- Dump dei dati per la tabella `sectionChild`
+-- Dump dei dati per la tabella `sectionchild`
 --
 
-INSERT INTO `sectionChild` (`id`, `link`, `label`, `icon`, `parent_id`, `show_menu`) VALUES
+INSERT INTO `sectionchild` (`id`, `link`, `label`, `icon`, `parent_id`, `show_menu`) VALUES
 (1, 'allAccounts', 'All accounts', 'people-fill', 2, 1),
 (2, 'addAccount', 'Add account', 'person-plus-fill', 2, 1),
 (3, 'editAccount', 'Edit account', 'icon', 2, 0),
@@ -351,21 +310,21 @@ INSERT INTO `sectionChild` (`id`, `link`, `label`, `icon`, `parent_id`, `show_me
 -- --------------------------------------------------------
 
 --
--- Struttura della tabella `sectionParent`
+-- Struttura della tabella `sectionparent`
 --
 
-CREATE TABLE `sectionParent` (
-  `id` int NOT NULL,
-  `link` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `label` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `icon` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL
+CREATE TABLE `sectionparent` (
+  `id` int(11) NOT NULL,
+  `link` varchar(255) NOT NULL,
+  `label` varchar(255) NOT NULL,
+  `icon` varchar(255) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
--- Dump dei dati per la tabella `sectionParent`
+-- Dump dei dati per la tabella `sectionparent`
 --
 
-INSERT INTO `sectionParent` (`id`, `link`, `label`, `icon`) VALUES
+INSERT INTO `sectionparent` (`id`, `link`, `label`, `icon`) VALUES
 (1, 'index', 'Dashboard', 'grid-fill'),
 (2, 'accounts', 'Accounts', 'people-fill'),
 (3, 'allFiles', 'Files', 'folder-fill'),
@@ -382,9 +341,9 @@ INSERT INTO `sectionParent` (`id`, `link`, `label`, `icon`) VALUES
 --
 
 CREATE TABLE `settings` (
-  `id` int NOT NULL,
-  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `value` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL
+  `id` int(11) NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `value` varchar(255) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -410,24 +369,12 @@ ALTER TABLE `accounts`
   ADD PRIMARY KEY (`id`);
 
 --
--- Indici per le tabelle `accountsRoles`
+-- Indici per le tabelle `accountsroles`
 --
-ALTER TABLE `accountsRoles`
+ALTER TABLE `accountsroles`
   ADD PRIMARY KEY (`id`),
   ADD KEY `account_id` (`account_id`),
   ADD KEY `role_id` (`role_id`);
-
---
--- Indici per le tabelle `calendar_cat`
---
-ALTER TABLE `calendar_cat`
-  ADD PRIMARY KEY (`id`);
-
---
--- Indici per le tabelle `calendar_events`
---
-ALTER TABLE `calendar_events`
-  ADD PRIMARY KEY (`id`);
 
 --
 -- Indici per le tabelle `doc_bookings`
@@ -476,159 +423,6 @@ ALTER TABLE `password_reset_temp`
 --
 ALTER TABLE `plugins`
   ADD PRIMARY KEY (`id`);
-
---
--- Indici per le tabelle `roles`
---
-ALTER TABLE `roles`
-  ADD PRIMARY KEY (`id`);
-
---
--- Indici per le tabelle `rolesSection`
---
-ALTER TABLE `rolesSection`
-  ADD PRIMARY KEY (`id`);
-
---
--- Indici per le tabelle `rolesSectionChild`
---
-ALTER TABLE `rolesSectionChild`
-  ADD PRIMARY KEY (`id`);
-
---
--- Indici per le tabelle `sectionChild`
---
-ALTER TABLE `sectionChild`
-  ADD PRIMARY KEY (`id`);
-
---
--- Indici per le tabelle `sectionParent`
---
-ALTER TABLE `sectionParent`
-  ADD PRIMARY KEY (`id`);
-
---
--- Indici per le tabelle `settings`
---
-ALTER TABLE `settings`
-  ADD PRIMARY KEY (`id`);
-
---
--- AUTO_INCREMENT per le tabelle scaricate
---
-
---
--- AUTO_INCREMENT per la tabella `accounts`
---
-ALTER TABLE `accounts`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
-
---
--- AUTO_INCREMENT per la tabella `accountsRoles`
---
-ALTER TABLE `accountsRoles`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
-
---
--- AUTO_INCREMENT per la tabella `calendar_cat`
---
-ALTER TABLE `calendar_cat`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
-
---
--- AUTO_INCREMENT per la tabella `calendar_events`
---
-ALTER TABLE `calendar_events`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
-
---
--- AUTO_INCREMENT per la tabella `doc_bookings`
---
-ALTER TABLE `doc_bookings`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT per la tabella `doc_settings`
---
-ALTER TABLE `doc_settings`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
-
---
--- AUTO_INCREMENT per la tabella `doc_timetable`
---
-ALTER TABLE `doc_timetable`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
-
---
--- AUTO_INCREMENT per la tabella `doc_timetable_exception`
---
-ALTER TABLE `doc_timetable_exception`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT per la tabella `files`
---
-ALTER TABLE `files`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT;
-
---
--- AUTO_INCREMENT per la tabella `home`
---
-ALTER TABLE `home`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
-
---
--- AUTO_INCREMENT per la tabella `plugins`
---
-ALTER TABLE `plugins`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
-
---
--- AUTO_INCREMENT per la tabella `roles`
---
-ALTER TABLE `roles`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
-
---
--- AUTO_INCREMENT per la tabella `rolesSection`
---
-ALTER TABLE `rolesSection`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
-
---
--- AUTO_INCREMENT per la tabella `rolesSectionChild`
---
-ALTER TABLE `rolesSectionChild`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
-
---
--- AUTO_INCREMENT per la tabella `sectionChild`
---
-ALTER TABLE `sectionChild`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=32;
-
---
--- AUTO_INCREMENT per la tabella `sectionParent`
---
-ALTER TABLE `sectionParent`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
-
---
--- AUTO_INCREMENT per la tabella `settings`
---
-ALTER TABLE `settings`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
-
---
--- Limiti per le tabelle scaricate
---
-
---
--- Limiti per la tabella `accountsRoles`
---
-ALTER TABLE `accountsRoles`
-  ADD CONSTRAINT `accountsRoles_ibfk_1` FOREIGN KEY (`account_id`) REFERENCES `accounts` (`id`),
-  ADD CONSTRAINT `accountsRoles_ibfk_2` FOREIGN KEY (`role_id`) REFERENCES `roles` (`id`);
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

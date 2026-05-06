@@ -15,12 +15,22 @@
         </li>
 
         <?php
-          $active = $page_name == 'rubrica' ? 'class="active"' : '' ;
+          $active = $page_name == 'prenotazione' ? 'class="active"' : '' ;
         ?>
         <li <?= $active ?>>
-          <a href="rubrica.php">
-            <i class="ti ti-address-book"></i>
-            <span <?= $active ?>>Rubrica</span>
+          <a href="booking.php">
+            <i class="ti ti-calendar"></i>
+            <span <?= $active ?>>Prenotazione visita</span>
+          </a>
+        </li>
+
+        <?php
+          $active = $page_name == 'info' ? 'class="active"' : '' ;
+        ?>
+        <li <?= $active ?>>
+          <a href="info.php">
+            <i class="ti ti-info-square-rounded"></i>
+            <span <?= $active ?>>Informazioni utili</span>
           </a>
         </li>
 
@@ -31,7 +41,7 @@
             </a>
           </li> -->
         <?php
-        if ($_SESSION['role_id'] < 4) {
+        if ($adminUser > 0) {
         ?>
           <li>
             <a href="admin">

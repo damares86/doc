@@ -1,7 +1,7 @@
 <?php
 require "admin/core/prefix.php";
 require "admin/inc/damares_version.php";
-session_start();
+
 spl_autoload_register('autoloader');
 
 function autoloader($class)
@@ -37,46 +37,44 @@ if (!is_file('admin/inc/class_initialize.php')) {
 }
 include "admin/inc/class_initialize.php";
 
+$adminUser = 0 ;
+
 // check if the user is logged
-if (!isset($_SESSION['loggedin']) && !isset($_SESSION['account_id'])) {
-  require "admin/inc/check_cookie.php";
-  header('Location: login/auth-login.php?err=noLogin');
-  exit;
-} else if (isset($_COOKIE['damares-login'])) {
-  $pieces = explode(",", $_COOKIE['damares-login']);
-  $auth->id = $pieces[0];
-  $id = $pieces[0];
-  $auth->auth_token = $pieces[1];
+if(isset($_COOKIE['damares-login'])){
+    $pieces = explode(",", $_COOKIE['damares-login']);
+    $auth->id = $pieces[0];
+    $id = $pieces[0];
+    $auth->auth_token = $pieces[1];
+    if($auth->checkCookie()>0){
+                     
+        session_start();
+        $accountroles->account_id = $id; 
+        
+        $account->id = $id ;
 
-  if (!$auth->checkCookie() > 0) {
-    header("Location: login/auth-login.php?err=noLogin");
-    exit;
-  }
+        $stmt = $account->showAllWhere('id',['id']);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
-  $role->id = $_SESSION['role_id'];
+        $role_id = $accountroles->showAccountRolesId();
+        $role->id = $role_id ;
+        
+        // set session data
+        $_SESSION['loggedin'] = true ;
+        $_SESSION['account_id'] = $row['id'];
+        $_SESSION['internal'] = 1 ;
+        $_SESSION['role_id'] = $role_id;
+        $_SESSION['rolename'] = $role->showRolenameById();
+        $_SESSION['username'] = $row['username'];
+        $_SESSION['avatar'] = $row['avatar'];
+        
+        // update the login log time
+        $time=date("Y-m-d G:i:s");
+        $auth->updateLog($time);
 
-  $setting->name = "role_redirect";
-  $stmt = $setting->showAllWhere('id', ['name']);
-  $row = $stmt->fetch(PDO::FETCH_ASSOC);
-  $redir = $row['value'];
-
-  if ($redir == 1) {
-    $stmt = $role->showAllWhere('id', ['id']);
-    $row = $stmt->fetch(PDO::FETCH_ASSOC);
-    extract($row);
-    if ($row['redirect'] != "none") {
-      header("Location: " . $row['redirect'] . "");
-      exit;
+        $adminUser = 1;
     }
-  }
-
-  $export = false;
-  $plugin->pluginname = "export_xlsx";
-
-  if ($plugin->itemExists('pluginname') && $plugin->isActive() == 1) {
-    $export = true;
-  }
 }
+
 
 // check if the debug mode is active
 $setting->name = "debug";
@@ -118,10 +116,10 @@ foreach (glob("admin/locale/$lang/*.php") as $row) {
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
 
   <!-- Title -->
-  <title>Agnelli Manager</title>
+  <title>Dottoressa Crosetto Maria Chiara - Giaveno</title>
 
   <!-- Favicon -->
-  <link rel="icon" href="assets/img/favicon/favicon.ico">
+  <link rel="icon" href="admin/assets/images/logo/favicon.ico">
 
   <!-- Style CSS -->
   <link rel="stylesheet" href="style.css">
@@ -156,8 +154,8 @@ foreach (glob("admin/locale/$lang/*.php") as $row) {
         <!-- Logo Wrapper -->
         <div class="logo-wrapper">
           <a href="index.php">
-            <img class="logo-light" src="assets/img/logo_agnelli_scritta.png" alt="">
-            <img class="logo-dark" src="assets/img/logo_agnelli_scritta.png" alt="">
+            <img class="logo-light" src="admin/assets/images/logo/dmweblab_logo.png" alt="">
+            <img class="logo-dark" src="admin/assets/images/logo/dmweblab_logo.png" alt="">
           </a>
         </div>
 
