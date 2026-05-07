@@ -1,6 +1,5 @@
 <?php
 
-
 ?>
 
 <div class="page-title">
@@ -31,7 +30,21 @@
       <h3>Prenotazioni</h3>
     </div>
     <div class="card-body">
-      ciao
+      <div class="row">
+        <?php
+        $monday = strtotime('monday this week');
+
+        for ($i = 0; $i < 5; $i++) {
+
+          $day = strtotime("+$i day", $monday);
+        ?>
+          
+        <?php
+          echo date('d/m', $day);
+          echo "<br>";
+        }
+        ?>
+      </div>
     </div>
   </div>
 </section>

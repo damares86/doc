@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Creato il: Mag 06, 2026 alle 16:37
+-- Creato il: Mag 07, 2026 alle 16:52
 -- Versione del server: 10.4.32-MariaDB
 -- Versione PHP: 8.2.12
 
@@ -44,7 +44,7 @@ CREATE TABLE `accounts` (
 --
 
 INSERT INTO `accounts` (`id`, `username`, `password`, `email`, `avatar`, `details`, `details_opt`, `auth_token`, `last_login`) VALUES
-(1, 'dmweblab', '$2y$10$EibgaewcRGXQhrMQswfqRuJQeWKMkGxHcWC62HV1g39CmtuU3lG9.', 'davidemasera@gmail.com', 'sd.png', NULL, NULL, 'acaa65bf2d3a3bf25616f9998bdadb6d7e92c97cb8', '2026-05-06 16:36:43'),
+(1, 'dmweblab', '$2y$10$EibgaewcRGXQhrMQswfqRuJQeWKMkGxHcWC62HV1g39CmtuU3lG9.', 'davidemasera@gmail.com', 'sd.png', NULL, NULL, 'acaa65bf2d3a3bf25616f9998bdadb6d7e92c97cb8', '2026-05-07 13:44:15'),
 (2, 'admin', '$2y$10$ox88LdYM2aFpxP63jJma6.jPi.eCRmgpqQpaQPLtje85sZGvLSf/.', 'dmweblab86@gmail.com', 'default.png', NULL, NULL, 'none', '2026-04-17 11:14:05');
 
 -- --------------------------------------------------------
@@ -113,19 +113,20 @@ CREATE TABLE `doc_timetable` (
   `id` int(11) NOT NULL,
   `weekday` int(11) NOT NULL,
   `start_time` time NOT NULL,
-  `end_time` time NOT NULL
+  `end_time` time NOT NULL,
+  `booking` int(11) NOT NULL DEFAULT 1
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Dump dei dati per la tabella `doc_timetable`
 --
 
-INSERT INTO `doc_timetable` (`id`, `weekday`, `start_time`, `end_time`) VALUES
-(1, 1, '09:00:00', '12:00:00'),
-(2, 2, '08:00:00', '11:00:00'),
-(3, 3, '14:00:00', '17:00:00'),
-(4, 4, '15:00:00', '19:00:00'),
-(5, 5, '09:00:00', '11:00:00');
+INSERT INTO `doc_timetable` (`id`, `weekday`, `start_time`, `end_time`, `booking`) VALUES
+(1, 1, '09:00:00', '12:00:00', 0),
+(2, 2, '08:00:00', '11:00:00', 1),
+(3, 3, '14:00:00', '17:00:00', 1),
+(4, 4, '15:00:00', '19:00:00', 1),
+(5, 5, '09:00:00', '11:00:00', 1);
 
 -- --------------------------------------------------------
 
@@ -301,11 +302,7 @@ INSERT INTO `sectionchild` (`id`, `link`, `label`, `icon`, `parent_id`, `show_me
 (24, 'allBooking', 'All bookings', 'calendar3', 8, 1),
 (25, 'addBooking', 'Add booking', 'calendar-plus', 8, 1),
 (26, 'bookingSettings', 'Settings', 'gear-wide-connected', 8, 1),
-(27, 'allExceptions', 'All Exceptions', 'exclamation-circle', 8, 1),
-(28, 'calendar', 'Show calendar', 'calendar3', 9, 1),
-(29, 'allCalendars', 'All categories', 'calendar2-range', 9, 1),
-(30, 'addCalendar', 'Add a category', 'calendar-plus', 9, 1),
-(31, 'editCalendar', 'Edit a category', 'calendar-plus', 9, 0);
+(27, 'allExceptions', 'All Exceptions', 'exclamation-circle', 8, 1);
 
 -- --------------------------------------------------------
 
@@ -331,8 +328,7 @@ INSERT INTO `sectionparent` (`id`, `link`, `label`, `icon`) VALUES
 (4, 'allSettings', 'Settings', 'tools'),
 (5, 'damares', 'Damares', 'dice-6-fill'),
 (6, 'allPlugins', 'Modules', 'plus-circle-fill'),
-(8, 'booking', 'Booking', 'calendar-week'),
-(9, 'calendar', 'Calendar', 'calendar-week');
+(8, 'booking', 'Booking', 'calendar-week');
 
 -- --------------------------------------------------------
 
@@ -423,6 +419,34 @@ ALTER TABLE `password_reset_temp`
 --
 ALTER TABLE `plugins`
   ADD PRIMARY KEY (`id`);
+
+--
+-- Indici per le tabelle `sectionchild`
+--
+ALTER TABLE `sectionchild`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indici per le tabelle `sectionparent`
+--
+ALTER TABLE `sectionparent`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- AUTO_INCREMENT per le tabelle scaricate
+--
+
+--
+-- AUTO_INCREMENT per la tabella `sectionchild`
+--
+ALTER TABLE `sectionchild`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=32;
+
+--
+-- AUTO_INCREMENT per la tabella `sectionparent`
+--
+ALTER TABLE `sectionparent`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
