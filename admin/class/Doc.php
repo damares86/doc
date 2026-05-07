@@ -16,6 +16,7 @@ class Doc extends Common
     public $weekday ;
     public $start_time ;
     public $end_time ;
+    public $booking ;
 
 
     function updateValue()

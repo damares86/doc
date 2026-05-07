@@ -43,13 +43,14 @@ if ($operation == "settings") {
 
     $error = 0 ;
 
-    for($i=1;$i<5;$i++){
+    for($i=1;$i<6;$i++){
 
         $doc->weekday = $i;
         $doc->start_time = $_POST["start_$i"];
         $doc->end_time = $_POST["end_$i"];
-
-        if(!$doc->update(['start_time','end_time'],'weekday')){
+        isset($_POST["booking_$i"] ) ? $doc->booking = 0 : $doc->booking = 1;
+        
+        if(!$doc->update(['start_time','end_time', 'booking'],'weekday')){
             $error++;
         }
 

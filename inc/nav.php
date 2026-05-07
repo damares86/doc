@@ -20,7 +20,7 @@
         <li <?= $active ?>>
           <a href="booking.php">
             <i class="ti ti-calendar"></i>
-            <span <?= $active ?>>Prenotazione visita</span>
+            <span <?= $active ?>>Prenotazione</span>
           </a>
         </li>
 
@@ -30,7 +30,7 @@
         <li <?= $active ?>>
           <a href="info.php">
             <i class="ti ti-info-square-rounded"></i>
-            <span <?= $active ?>>Informazioni utili</span>
+            <span <?= $active ?>>Informazioni</span>
           </a>
         </li>
 

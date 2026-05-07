@@ -48,27 +48,47 @@
                                             5 => "Venerdì"
                                         ];
 
+
                                         $doc->table = 'doc_timetable';
 
                                         $stmt_time = $doc->showAll('id');
                                         while ($row_time = $stmt_time->fetch(PDO::FETCH_ASSOC)) {
 
                                             extract($row_time);
+
                                             $day_name = $days[$row_time['weekday']];
                                         ?>
-                                            <div class="col-md-4 border-bottom">
+                                            <div class="col-md-3 border-bottom">
                                                 <label><b><?= $day_name ?></b> </label>
                                             </div>
-                                            <div class="col-md-4 border-bottom">
+                                            <div class="col-md-3 border-bottom">
                                                 <div class="form-group">
                                                     <label>Inizio</label>
                                                     <input type="time" class="form-control" name="start_<?= $row_time['weekday'] ?>" value="<?= $row_time['start_time'] ?>">
                                                 </div>
                                             </div>
-                                            <div class="col-md-4 border-bottom">
+                                            <div class="col-md-3 border-bottom">
                                                 <div class="form-group">
                                                     <label>Fine</label>
                                                     <input type="time" class="form-control" name="end_<?= $row_time['weekday'] ?>" value="<?= $row_time['end_time'] ?>">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3 px-5 py-3 border-bottom">
+                                                <div class="form-group">
+                                                    <div class="position-relative">
+                                                        <div class="form-check">
+                                                            <div class="checkbox">
+                                                                <?php 
+                                                                $checked = '';
+                                                                if($row_time['booking'] == 0){
+                                                                    $checked = 'checked' ;
+                                                                }
+                                                                ?>
+                                                                <input type="checkbox" id="checkbox1" name="booking_<?= $row_time['weekday']?>" class="form-check-input" <?=  $checked ?>>
+                                                                <label for="checkbo1">&nbsp; &nbsp;Accesso libero</label>
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
                                         <?php
