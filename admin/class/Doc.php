@@ -37,4 +37,19 @@ class Doc extends Common
             return false;
         }
     }
+
+     public function generateSlots($start, $end, $duration = 15)
+    {
+        $slots = [];
+
+        $startTime = new DateTime($start);
+        $endTime = new DateTime($end);
+
+        while ($startTime < $endTime) {
+            $slots[] = $startTime->format('H:i');
+            $startTime->modify("+{$duration} minutes");
+        }
+
+        return $slots;
+    }
 }

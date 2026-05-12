@@ -37,42 +37,41 @@ if (!is_file('admin/inc/class_initialize.php')) {
 }
 include "admin/inc/class_initialize.php";
 
-$adminUser = 0 ;
-
+$adminUser = 0;
 // check if the user is logged
-if(isset($_COOKIE['damares-login'])){
-    $pieces = explode(",", $_COOKIE['damares-login']);
-    $auth->id = $pieces[0];
-    $id = $pieces[0];
-    $auth->auth_token = $pieces[1];
-    if($auth->checkCookie()>0){
-                     
-        session_start();
-        $accountroles->account_id = $id; 
-        
-        $account->id = $id ;
+if (isset($_COOKIE['damares-login'])) {
+  $pieces = explode(",", $_COOKIE['damares-login']);
+  $auth->id = $pieces[0];
+  $id = $pieces[0];
+  $auth->auth_token = $pieces[1];
+  if ($auth->checkCookie() > 0) {
 
-        $stmt = $account->showAllWhere('id',['id']);
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    session_start();
+    $accountroles->account_id = $id;
 
-        $role_id = $accountroles->showAccountRolesId();
-        $role->id = $role_id ;
-        
-        // set session data
-        $_SESSION['loggedin'] = true ;
-        $_SESSION['account_id'] = $row['id'];
-        $_SESSION['internal'] = 1 ;
-        $_SESSION['role_id'] = $role_id;
-        $_SESSION['rolename'] = $role->showRolenameById();
-        $_SESSION['username'] = $row['username'];
-        $_SESSION['avatar'] = $row['avatar'];
-        
-        // update the login log time
-        $time=date("Y-m-d G:i:s");
-        $auth->updateLog($time);
+    $account->id = $id;
 
-        $adminUser = 1;
-    }
+    $stmt = $account->showAllWhere('id', ['id']);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    $role_id = $accountroles->showAccountRolesId();
+    $role->id = $role_id;
+
+    // set session data
+    $_SESSION['loggedin'] = true;
+    $_SESSION['account_id'] = $row['id'];
+    $_SESSION['internal'] = 1;
+    $_SESSION['role_id'] = $role_id;
+    $_SESSION['rolename'] = $role->showRolenameById();
+    $_SESSION['username'] = $row['username'];
+    $_SESSION['avatar'] = $row['avatar'];
+
+    // update the login log time
+    $time = date("Y-m-d G:i:s");
+    $auth->updateLog($time);
+
+    $adminUser = 1;
+  }
 }
 
 
@@ -89,6 +88,7 @@ if ($row_debug['value'] == 1) {
     'output' => true,
   ));
 }
+
 
 // check the language set
 $setting->name = "lang";
@@ -128,7 +128,7 @@ foreach (glob("admin/locale/$lang/*.php") as $row) {
   <!-- Web App Manifest -->
   <link rel="manifest" href="manifest.json">
   <!-- Bootstrap 5.3 -->
-  <!--<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">-_>
+  <!--<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">-->
 
   <!-- DataTables -->
   <link href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" rel="stylesheet">

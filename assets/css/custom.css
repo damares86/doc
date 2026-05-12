@@ -21,3 +21,7 @@ body{
 .sidenav-profile{
     background-color: #008db1;
 }
+
+.card.booking{
+    background-color: #eee;
+}
