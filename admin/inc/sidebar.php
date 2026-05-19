@@ -36,15 +36,15 @@
         </div>
         <div class="col-12 text-center">
             <?php
-            $plugin->pluginname = "mini_cms";
+           /* $plugin->pluginname = "mini_cms";
 
-            if ($plugin->itemExists('pluginname') && $plugin->isActive() == 1) {
+            if ($plugin->itemExists('pluginname') && $plugin->isActive() == 1) {*/
             ?>
                 <a href="../" class="btn icon btn-primary shadow mx-3 px-3 text-white">
-                    <i class="bi bi-arrow-left-circle"></i> &nbsp; <?= $mc_backsite ?>
+                    <i class="bi bi-arrow-left-circle"></i> &nbsp; Vai al sito<?= $mc_backsite ?>
                 </a>
             <?php
-            }
+          /*  }*/
             ?>
         </div>
         <ul class="sidebar_menu list-unstyled">
