@@ -99,6 +99,31 @@ $slots = $doc->generateSlots($start_time, $end_time);
         });
       }
 
+      function isBusinessDay(date) {
+        const day = date.getDay(); // 0 = domenica, 6 = sabato
+        return day >= 1 && day <= 5;
+      }
+
+      function getNextBusinessDay(date) {
+        const d = new Date(date);
+
+        do {
+          d.setDate(d.getDate() + 1);
+        } while (!isBusinessDay(d));
+
+        return d;
+      }
+
+      function getPreviousBusinessDay(date) {
+        const d = new Date(date);
+
+        do {
+          d.setDate(d.getDate() - 1);
+        } while (!isBusinessDay(d));
+
+        return d;
+      }
+
       function loadSlots(date) {
         fetch('admin/core/api_slots.php?date=' + date)
           .then(response => response.json())
@@ -111,13 +136,13 @@ $slots = $doc->generateSlots($start_time, $end_time);
             if (data.slots.length === 0) {
               html = `
                     <div class="alert alert-warning">
-                        Nessuno slot disponibile.
+                        Nessun appuntamento disponibile.
                     </div>
                 `;
             } else {
               data.slots.forEach(slot => {
                 html += `
-                        <div class="card mb-2">
+                        <div class="card mb-2 border-bottom">
                             <div class="card-body d-flex justify-content-between align-items-center">
                                 <span>${slot}</span>
                                 <button class="btn btn-primary btn-sm">
@@ -137,34 +162,42 @@ $slots = $doc->generateSlots($start_time, $end_time);
       function updateNavigationButtons() {
         const current = new Date(currentDate);
 
-        // Disabilita "indietro" se siamo a oggi
+        // Disabilita "indietro" solo quando siamo esattamente su oggi
         document.getElementById('prevDay').disabled =
-          formatDateISO(current) <= formatDateISO(today);
+          formatDateISO(current) === formatDateISO(today);
 
-        // Disabilita "avanti" oltre +10 giorni
+        // Disabilita "avanti" se il prossimo giorno lavorativo supera maxDate
+        const nextBusinessDay = getNextBusinessDay(current);
+
         document.getElementById('nextDay').disabled =
-          formatDateISO(current) >= formatDateISO(maxDate);
+          nextBusinessDay > maxDate;
       }
 
       document.getElementById('prevDay').addEventListener('click', function() {
-        const d = new Date(currentDate);
-        d.setDate(d.getDate() - 1);
+        const d = getPreviousBusinessDay(new Date(currentDate));
 
-        if (d >= today) {
+        // Confronto sulle stringhe YYYY-MM-DD per evitare problemi di orario
+        if (formatDateISO(d) >= formatDateISO(today)) {
           currentDate = formatDateISO(d);
           loadSlots(currentDate);
         }
       });
 
       document.getElementById('nextDay').addEventListener('click', function() {
-        const d = new Date(currentDate);
-        d.setDate(d.getDate() + 1);
+        const d = getNextBusinessDay(new Date(currentDate));
 
         if (d <= maxDate) {
           currentDate = formatDateISO(d);
           loadSlots(currentDate);
         }
       });
+
+      // Caricamento iniziale
+      while (!isBusinessDay(new Date(currentDate))) {
+        currentDate = formatDateISO(
+          getNextBusinessDay(new Date(currentDate))
+        );
+      }
 
       // Caricamento iniziale
       loadSlots(currentDate);
