@@ -17,6 +17,11 @@ class Doc extends Common
     public $start_time;
     public $end_time;
     public $booking;
+    public $email ;
+    public $phone ;
+    public $notes ;
+    public $slot_booked ;
+    public $token;
 
 
     function updateValue()

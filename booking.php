@@ -75,134 +75,73 @@ $slots = $doc->generateSlots($start_time, $end_time);
 
       <div class="pb-3"></div>
     </div>
+    <script src="assets/js/booking.js"></script>
 
 
-    <script>
-      let currentDate = new Date().toISOString().split('T')[0];
+    <div class="modal fade" id="bookingModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
 
-      // oggi e limite massimo (+10 giorni)
-      const today = new Date();
-      const maxDate = new Date();
-      maxDate.setDate(maxDate.getDate() + 10);
+          <form action="admin/core/mngBooking.php" method="post">
 
-      function formatDateISO(date) {
-        return date.toISOString().split('T')[0];
-      }
+            <div class="modal-header">
+              <h5 class="modal-title">Prenota appuntamento</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Chiudi"></button>
+            </div>
 
-      function formatDateLabel(dateString) {
-        const d = new Date(dateString);
-        return d.toLocaleDateString('it-IT', {
-          weekday: 'long',
-          day: '2-digit',
-          month: 'long',
-          year: 'numeric'
-        });
-      }
+            <div class="modal-body">
 
-      function isBusinessDay(date) {
-        const day = date.getDay(); // 0 = domenica, 6 = sabato
-        return day >= 1 && day <= 5;
-      }
+              <p class="mb-3">
+                <strong id="bookingDateLabel"></strong>
+              </p>
 
-      function getNextBusinessDay(date) {
-        const d = new Date(date);
+              <!-- Campi nascosti -->
+              <input type="hidden" name="date" id="bookingDate">
+              <input type="hidden" name="time" id="bookingTime">
+              <input type="hidden" name="operation" value="booking">
 
-        do {
-          d.setDate(d.getDate() + 1);
-        } while (!isBusinessDay(d));
+              <!-- Nome -->
+              <div class="mb-3">
+                <label class="form-label">Nome e cognome <span class="text-danger">*</span></label>
+                <input type="text" name="name" class="form-control" required>
+              </div>
 
-        return d;
-      }
+              <!-- Email -->
+              <div class="mb-3">
+                <label class="form-label">Email <span class="text-danger">*</span></label>
+                <input type="email" name="email" class="form-control" required>
+              </div>
 
-      function getPreviousBusinessDay(date) {
-        const d = new Date(date);
+              <!-- Telefono -->
+              <div class="mb-3">
+                <label class="form-label">Telefono <span class="text-danger">*</span></label>
+                <input type="text" name="phone" class="form-control" required>
+              </div>
+              <!-- Motivazione -->
+              <div class="mb-3">
+                <label class="form-label">Motivazione della visita <span class="text-danger">*</span></label>
+                <textarea name="notes" class="form-control" rows="4" required></textarea>
+              </div>
 
-        do {
-          d.setDate(d.getDate() - 1);
-        } while (!isBusinessDay(d));
+            </div>
 
-        return d;
-      }
+            <div class="modal-footer">
+              <button type="button"
+                class="btn btn-secondary"
+                data-bs-dismiss="modal">
+                Annulla
+              </button>
 
-      function loadSlots(date) {
-        fetch('admin/core/api_slots.php?date=' + date)
-          .then(response => response.json())
-          .then(data => {
-            document.getElementById('currentDate').textContent =
-              formatDateLabel(data.date);
+              <button type="submit" class="btn btn-primary">
+                Prenota
+              </button>
+            </div>
 
-            let html = '';
+          </form>
 
-            if (data.slots.length === 0) {
-              html = `
-                    <div class="alert alert-warning">
-                        Nessun appuntamento disponibile.
-                    </div>
-                `;
-            } else {
-              data.slots.forEach(slot => {
-                html += `
-                        <div class="card mb-2 border-bottom">
-                            <div class="card-body d-flex justify-content-between align-items-center">
-                                <span>${slot}</span>
-                                <button class="btn btn-primary btn-sm">
-                                    Prenota
-                                </button>
-                            </div>
-                        </div>
-                    `;
-              });
-            }
-
-            document.getElementById('slots').innerHTML = html;
-            updateNavigationButtons();
-          });
-      }
-
-      function updateNavigationButtons() {
-        const current = new Date(currentDate);
-
-        // Disabilita "indietro" solo quando siamo esattamente su oggi
-        document.getElementById('prevDay').disabled =
-          formatDateISO(current) === formatDateISO(today);
-
-        // Disabilita "avanti" se il prossimo giorno lavorativo supera maxDate
-        const nextBusinessDay = getNextBusinessDay(current);
-
-        document.getElementById('nextDay').disabled =
-          nextBusinessDay > maxDate;
-      }
-
-      document.getElementById('prevDay').addEventListener('click', function() {
-        const d = getPreviousBusinessDay(new Date(currentDate));
-
-        // Confronto sulle stringhe YYYY-MM-DD per evitare problemi di orario
-        if (formatDateISO(d) >= formatDateISO(today)) {
-          currentDate = formatDateISO(d);
-          loadSlots(currentDate);
-        }
-      });
-
-      document.getElementById('nextDay').addEventListener('click', function() {
-        const d = getNextBusinessDay(new Date(currentDate));
-
-        if (d <= maxDate) {
-          currentDate = formatDateISO(d);
-          loadSlots(currentDate);
-        }
-      });
-
-      // Caricamento iniziale
-      while (!isBusinessDay(new Date(currentDate))) {
-        currentDate = formatDateISO(
-          getNextBusinessDay(new Date(currentDate))
-        );
-      }
-
-      // Caricamento iniziale
-      loadSlots(currentDate);
-    </script>
-
+        </div>
+      </div>
+    </div>
     <?php
     require 'inc/nav.php';
     require 'inc/footer.php';
