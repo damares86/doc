@@ -162,7 +162,19 @@ class Doc extends Common
         foreach ($rules as $rule) {
             // Il campo booking contiene la durata dello slot in minuti.
             // Se nullo o <= 0, usa 15 minuti.
-            $duration = (int)$rule['booking'];
+            $this->table = 'doc_settings' ;
+            $this->name = 'slot_length' ;
+            $stmt = $this->showAllWhere('id',['name']);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            extract($row);
+            $duration = $row['value'] ;
+
+            ////////////////////////////////////////
+            // QUI DEVO PRENDERE LA DURATA DELLO SLOT
+            ////////////////////////////////////////
+
+
+
             if ($duration <= 0) {
                 $duration = 15;
             }

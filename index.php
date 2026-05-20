@@ -51,7 +51,7 @@ $page_name = 'index';
               $access = '';
               $time_row['booking'] == 1 ? $access = 'Prenotazione' : $access = 'Accesso libero';
             ?>
-              <li class="mb-2"><b><?= $days[$time_row['weekday']] ?>:</b> <?= date('H:i', strtotime($time_row['start_time'])) ?> - <?= date('H:i', strtotime($time_row['start_time'])) ?> (<?= $access ?>)</li>
+              <li class="mb-2"><b><?= $days[$time_row['weekday']] ?>:</b> <?= date('H:i', strtotime($time_row['start_time'])) ?> - <?= date('H:i', strtotime($time_row['end_time'])) ?> (<?= $access ?>)</li>
             <?php
             }
             ?>
