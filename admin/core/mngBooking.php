@@ -113,7 +113,7 @@ if ($operation == "settings") {
             'Reply-To: ' . $from . "\r\n" .
             'X-Mailer: PHP/' . phpversion();
 
-        $subject = "Prenotazione visita - $date";
+        $subject = "Prenotazione visita - $italian_date";
 
         $output = $doc_block1;
         $output .= "<p>Paziente: <b>$patient_name</b><br>";

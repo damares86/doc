@@ -1,6 +1,6 @@
 <?php
 
-require __DIR__ . "/coreConfig.php";
+require "coreConfig.php";
 
 header('Content-Type: application/json');
 
