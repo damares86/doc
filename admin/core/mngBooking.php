@@ -13,7 +13,7 @@ spl_autoload_register('autoloader');
 
 function autoloader($class)
 {
-	include("../class/$class.php");
+    include("../class/$class.php");
 }
 
 require "../core/prefix.php";
@@ -28,11 +28,11 @@ $row_debug = $dbg->fetch(PDO::FETCH_ASSOC);
 extract($row_debug);
 
 if ($row_debug['value'] == 1) {
-	require '../vendor/autoload.php';		// If installed via composer
-	$debug = new \bdk\Debug(array(
-		'collect' => true,
-		'output' => true,
-	));
+    require '../vendor/autoload.php';        // If installed via composer
+    $debug = new \bdk\Debug(array(
+        'collect' => true,
+        'output' => true,
+    ));
 }
 
 // check the language set
@@ -43,7 +43,7 @@ $_SESSION['lang'] = $lang;
 
 
 foreach (glob("../locale/$lang/*.php") as $row) {
-	require "$row";
+    require "$row";
 }
 
 
@@ -154,7 +154,7 @@ if ($operation == "settings") {
         $output .= "<p>Paziente: <b>$patient_name</b><br>";
         $output .= "<b>Data della visita: $italian_date - $time</b>";
         $output .= $doc_block2;
-        $output .= '<p><a href="http://doc.dmweblab.com?email=' . $email . '&token=' . $token . '" target="_blank">Cancella appuntamento</a></p>';
+        $output .= '<p><a href="http://doc.dmweblab.com/delete_booking.php?email=' . $email . '&token=' . $token . '" target="_blank">Cancella appuntamento</a></p>';
         $output .= $doc_block3;
 
         if (mail($to, $subject, $output, $headers)) {
@@ -166,6 +166,25 @@ if ($operation == "settings") {
         }
     } else {
         header('Location: ../../booking.php?err=notBooked');
+        exit;
+    }
+} else if ($operation == 'deleteEmail') {
+
+    $doc->table = 'doc_bookings';
+    $doc->email = filter_input(INPUT_POST, 'email');
+    $doc->token = filter_input(INPUT_POST, 'token');
+
+    $stmt = $doc->showAllWhere('id', ['email', 'token']);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    extract($row);
+
+    $doc->table = 'doc_bookings';
+    $doc->id = $row['id'];
+    if ($doc->delete('id')) {
+        header("Location: ../../index.php?msg=bookingDeleteSucc");
+        exit;
+    } else {
+        header("Location: ../../index.php?err=bookingDeleteFail");
         exit;
     }
 }

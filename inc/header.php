@@ -140,11 +140,11 @@ foreach (glob("admin/locale/$lang/*.php") as $row) {
 
 <body>
   <!-- Preloader -->
-  <div id="preloader">
+  <!--<div id="preloader">
     <div class="spinner-grow text-primary" role="status">
       <span class="visually-hidden">Loading...</span>
     </div>
-  </div>
+  </div>-->
 
   <!-- Header Area -->
   <div class="header-area" id="headerArea">
