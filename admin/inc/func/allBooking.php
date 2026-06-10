@@ -1,4 +1,19 @@
 <?php
+$selectedDate = $_GET['date'] ?? date('Y-m-d');
+
+if (date('N', strtotime($selectedDate)) > 5) {
+  $selectedDate = date('Y-m-d');
+}
+
+$days = [
+    1 => 'Lunedì',
+    2 => 'Martedì',
+    3 => 'Mercoledì',
+    4 => 'Giovedì',
+    5 => 'Venerdì',
+    6 => 'Sabato',
+    7 => 'Domenica'
+];
 
 ?>
 
@@ -31,19 +46,109 @@
     </div>
     <div class="card-body">
       <div class="row">
-        <?php
-        $monday = strtotime('monday this week');
 
-        for ($i = 0; $i < 5; $i++) {
+        <div class="col-12">
+          <?php
 
-          $day = strtotime("+$i day", $monday);
-        ?>
-          
-        <?php
-          echo date('d/m', $day);
-          echo "<br>";
-        }
-        ?>
+          $today = date('Y-m-d');
+
+          $prevDate = date('Y-m-d', strtotime($selectedDate . ' -1 weekday'));
+          $nextDate = date('Y-m-d', strtotime($selectedDate . ' +1 weekday'));
+
+          $maxDate = date('Y-m-d', strtotime('+10 days'));
+
+          ?>
+
+          <div class="d-flex justify-content-between align-items-center mb-4">
+
+            <?php if ($selectedDate > $today): ?>
+              <a href="?p=allBooking&module=bookings&date=<?= $prevDate ?>"
+                class="btn btn-outline-primary">
+                ←
+              </a>
+            <?php else: ?>
+              <span></span>
+            <?php endif; ?>
+            <?php
+            $weekday = date('N', strtotime($selectedDate));
+            ?>
+            <h4 class="mb-0">
+             <?php
+             echo $days[$weekday] . ' ' . date('d/m/Y', strtotime($selectedDate));
+             ?>
+            </h4>
+
+            <?php if ($selectedDate < $maxDate): ?>
+              <a href="?p=allBooking&module=bookings&date=<?= $nextDate ?>"
+                class="btn btn-outline-primary">
+                →
+              </a>
+            <?php else: ?>
+              <span></span>
+            <?php endif; ?>
+            <?php
+
+            $stmt = $db->prepare("
+              SELECT *
+              FROM doc_bookings
+              WHERE DATE(slot_booked) = ?
+              ORDER BY slot_booked ASC
+               ");
+
+            $stmt->execute([$selectedDate]);
+
+            $bookings = $stmt->fetchAll();
+            ?>
+          </div>
+        </div>
+        <div class="col-12">
+
+          <?php if (empty($bookings)): ?>
+
+            <div class="alert alert-warning">
+              Nessuna prenotazione per questa data.
+            </div>
+
+          <?php else: ?>
+
+            <div class="list-group">
+
+              <?php foreach ($bookings as $booking): ?>
+
+                <div class="list-group-item">
+
+                  <div class="d-flex justify-content-between">
+
+                    <strong>
+                      <?= date('H:i', strtotime($booking['slot_booked'])); ?>
+                    </strong>
+
+                    <span>
+                      <?= htmlspecialchars($booking['name']); ?>
+                    </span>
+
+                  </div>
+
+                  <small>
+                    <?= htmlspecialchars($booking['email']); ?>
+                  </small>
+
+                  <?php if (!empty($booking['notes'])): ?>
+                    <br>
+                    <small>
+                      <?= nl2br(htmlspecialchars($booking['notes'])); ?>
+                    </small>
+                  <?php endif; ?>
+
+                </div>
+
+              <?php endforeach; ?>
+
+            </div>
+
+          <?php endif; ?>
+
+        </div>
       </div>
     </div>
   </div>
