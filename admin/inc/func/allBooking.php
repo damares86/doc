@@ -6,13 +6,13 @@ if (date('N', strtotime($selectedDate)) > 5) {
 }
 
 $days = [
-    1 => 'Lunedì',
-    2 => 'Martedì',
-    3 => 'Mercoledì',
-    4 => 'Giovedì',
-    5 => 'Venerdì',
-    6 => 'Sabato',
-    7 => 'Domenica'
+  1 => 'Lunedì',
+  2 => 'Martedì',
+  3 => 'Mercoledì',
+  4 => 'Giovedì',
+  5 => 'Venerdì',
+  6 => 'Sabato',
+  7 => 'Domenica'
 ];
 
 ?>
@@ -73,9 +73,9 @@ $days = [
             $weekday = date('N', strtotime($selectedDate));
             ?>
             <h4 class="mb-0">
-             <?php
-             echo $days[$weekday] . ' ' . date('d/m/Y', strtotime($selectedDate));
-             ?>
+              <?php
+              echo $days[$weekday] . ' ' . date('d/m/Y', strtotime($selectedDate));
+              ?>
             </h4>
 
             <?php if ($selectedDate < $maxDate): ?>
@@ -117,30 +117,42 @@ $days = [
 
                 <div class="list-group-item">
 
-                  <div class="d-flex justify-content-between">
+                  <div class="row">
+                    <div class="col-3">
+                      <strong>
+                        <?= date('H:i', strtotime($booking['slot_booked'])); ?>
+                      </strong>
+                    </div>
+                    <div class="col-9">
+                      <div class="row">
+                        <div class="col-7 pb-3">
+                          <span>
+                            <strong>Paziente:</strong> <?= htmlspecialchars($booking['name']); ?><br>
+                            <small><strong>Telefono: </strong>
+                              <?= htmlspecialchars($booking['phone']); ?>
+                            <br>
+                            <strong>Email:</strong>
+                              <?= htmlspecialchars($booking['email']); ?>
+                            </small>
+                          </span>
 
-                    <strong>
-                      <?= date('H:i', strtotime($booking['slot_booked'])); ?>
-                    </strong>
-
-                    <span>
-                      <?= htmlspecialchars($booking['name']); ?>
-                    </span>
-
+                        </div>
+                        <div class="col-5 pb-3">
+                          <strong>Motivazione:</strong>
+                        </div>
+                        <?php if (!empty($booking['notes'])): ?>
+                          <div class="col-12 border-top pt-3">
+                            <strong>Eventuali note:</strong><br> <small>
+                              <?= nl2br(htmlspecialchars($booking['notes'])); ?>
+                            </small>
+                          </div>
+                        <?php endif; ?>
+                      </div>
+                    </div>
                   </div>
 
-                  <small>
-                    <?= htmlspecialchars($booking['email']); ?>
-                  </small>
-
-                  <?php if (!empty($booking['notes'])): ?>
-                    <br>
-                    <small>
-                      <?= nl2br(htmlspecialchars($booking['notes'])); ?>
-                    </small>
-                  <?php endif; ?>
-
                 </div>
+
 
               <?php endforeach; ?>
 
