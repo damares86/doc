@@ -119,10 +119,41 @@ $slots = $doc->generateSlots($start_time, $end_time);
               </div>
               <!-- Motivazione -->
               <div class="mb-3">
-                <label class="form-label">Motivazione della visita <span class="text-danger">*</span></label>
-                <textarea name="notes" class="form-control" rows="4" required></textarea>
+                <label class="form-label">Motivo della visita <span class="text-danger">*</span></label>
+                <select class="form-select form-control-clicked" id="defaultSelect" name="reason_id" aria-label="Default select example" required>
+                  <option value="" selected disabled>---</option>
+                  <?php
+                  $doc->table = "doc_reason";
+                  $stmt = $doc->showAll('id');
+                  while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                    extract($row);
+                  ?>
+                    <option value="<?= $row['id'] ?>"><?= $row['name'] ?></option>
+                  <?php
+                  }
+                  ?>
+                </select>
               </div>
 
+              <!-- Note -->
+              <div class="mb-3">
+                <label class="form-label">Eventuali note</label>
+                <textarea name="notes" id="notes" class="form-control" rows="3 maxlength="140"></textarea>
+                <small id="notesCounter" class="text-muted">
+                  0 / 140 caratteri
+                </small>
+              </div>
+
+              <script>
+                const textarea = document.getElementById('notes');
+                const counter = document.getElementById('notesCounter');
+                const maxLength = textarea.maxLength;
+
+                textarea.addEventListener('input', function() {
+                  counter.textContent =
+                    `${this.value.length} / ${maxLength} caratteri`;
+                });
+              </script>
             </div>
 
             <div class="modal-footer">

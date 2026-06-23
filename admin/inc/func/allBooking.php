@@ -130,19 +130,26 @@ $days = [
                             <strong>Paziente:</strong> <?= htmlspecialchars($booking['name']); ?><br>
                             <small><strong>Telefono: </strong>
                               <?= htmlspecialchars($booking['phone']); ?>
-                            <br>
-                            <strong>Email:</strong>
+                              <br>
+                              <strong>Email:</strong>
                               <?= htmlspecialchars($booking['email']); ?>
                             </small>
                           </span>
 
                         </div>
                         <div class="col-5 pb-3">
-                          <strong>Motivazione:</strong>
+                          <?php
+                          $doc->table = "doc_reason";
+                          $doc->id = $booking['reason_id'];
+                          $stmt = $doc->showAllWhere('id', ['id']);
+                          $row = $stmt->fetch(PDO::FETCH_ASSOC);
+                          extract($row);
+                          ?>
+                          <strong>Motivazione:</strong> <?= $row['name'] ?>
                         </div>
                         <?php if (!empty($booking['notes'])): ?>
                           <div class="col-12 border-top pt-3">
-                            <strong>Eventuali note:</strong><br> <small>
+                            <strong>Note aggiuntive:</strong><br> <small>
                               <?= nl2br(htmlspecialchars($booking['notes'])); ?>
                             </small>
                           </div>

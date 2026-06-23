@@ -19,6 +19,7 @@ class Doc extends Common
     public $booking;
     public $email ;
     public $phone ;
+    public $reason_id ;
     public $notes ;
     public $slot_booked ;
     public $token;

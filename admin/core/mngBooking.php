@@ -120,11 +120,12 @@ if ($operation == "settings") {
     $doc->name = $patient_name;
     $doc->email = $email;
     $doc->phone = filter_input(INPUT_POST, 'phone');
+    $doc->reason_id = filter_input(INPUT_POST,'reason_id');
     $doc->notes = filter_input(INPUT_POST, 'notes');
     $doc->token = $token;
 
 
-    if ($doc->insert(['name', 'email', 'phone', 'notes', 'slot_booked', 'token'])) {
+    if ($doc->insert(['name', 'email', 'phone','reason_id', 'notes', 'slot_booked', 'token'])) {
 
         ///////////////////////////////////////////////////////////////
         ////    INVIO EMAIL CON LINK PER MODIFICA O CANCELLAZIONE
