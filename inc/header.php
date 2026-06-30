@@ -160,12 +160,12 @@ foreach (glob("admin/locale/$lang/*.php") as $row) {
         </div>
 
         <!-- Navbar Toggler -->
-        <div class="navbar-toggler" id="affanNavbarToggler" data-bs-toggle="offcanvas" data-bs-target="#affanOffcanvas"
+      <!--   <div class="navbar-toggler" id="affanNavbarToggler" data-bs-toggle="offcanvas" data-bs-target="#affanOffcanvas"
           aria-controls="affanOffcanvas">
           <span class="d-block"></span>
           <span class="d-block"></span>
           <span class="d-block"></span>
-        </div>
+        </div> -->
       </div>
     </div>
   </div>
