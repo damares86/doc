@@ -13,10 +13,10 @@ $db = $database->getConnection();
 |--------------------------------------------------------------------------
 */
 
-$from = "prenotazioni@dottoressacrosetto.it";
+$from = "info@dmweblab.com";
 
 $to = [
-    "davidemasera@gmail.com"
+    "dottoressa.crosetto@gmail.com"
 ];
 
 /*

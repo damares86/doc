@@ -150,13 +150,14 @@ foreach (glob("admin/locale/$lang/*.php") as $row) {
   <div class="header-area" id="headerArea">
     <div class="container">
       <!-- Header Content -->
-      <div class="header-content header-style-five position-relative d-flex align-items-center justify-content-between">
+      <div class="header-content header-style-five position-relative p-2 align-items-center justify-content-between">
         <!-- Logo Wrapper -->
-        <div class="logo-wrapper">
-          <a href="index.php">
+        <div class="logo-wrapper text-center">
+          Dott.ssa Maria Chiara Crosetto
+<!--           <a href="index.php">
             <img class="logo-light" src="admin/assets/images/logo/dmweblab_logo.png" alt="">
             <img class="logo-dark" src="admin/assets/images/logo/dmweblab_logo.png" alt="">
-          </a>
+          </a> -->
         </div>
 
         <!-- Navbar Toggler -->
