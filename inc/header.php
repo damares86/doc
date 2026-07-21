@@ -31,12 +31,12 @@ if (!is_file('admin/inc/class_initialize.php')) {
   if ($prefix) {
     fwrite($file_handle, '$common->prx = "' . $prefix . '_";');
     fwrite($file_handle, "\n");
-  }
-  fwrite($file_handle, "?>");
-  chmod('admin/inc/class_initialize.php', 0777);
-}
-include "admin/inc/class_initialize.php";
-
+    }
+    fwrite($file_handle, "?>");
+    chmod('admin/inc/class_initialize.php', 0777);
+    }
+    include "admin/inc/class_initialize.php";
+    
 $adminUser = 0;
 // check if the user is logged
 if (isset($_COOKIE['damares-login'])) {

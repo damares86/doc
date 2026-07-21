@@ -42,9 +42,26 @@ header('Content-Type: application/json');
 
 $date = $_GET['date'] ?? date('Y-m-d');
 
+// Giorno della settimana (1=Lunedì ... 7=Domenica)
+$weekday = date('N', strtotime($date));
+
+$doc->weekday = $weekday;
+$doc->table = 'doc_timetable';
+
+$stmt = $doc->showAllWhere('id', ['weekday']);
+$row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+// Se non esiste alcuna configurazione considero non libero
+$free = false;
+
+if ($row) {
+    $free = ((int)$row['booking'] === 0);
+}
+
 $slots = $doc->getAvailableSlots($db, $date);
 
 echo json_encode([
     'date'  => $date,
+    'free'  => $free,
     'slots' => $slots
 ]);

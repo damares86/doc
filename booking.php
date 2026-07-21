@@ -23,11 +23,16 @@ $doc->table = 'doc_timetable';
 $stmt = $doc->showAllWhere('id', ['weekday']);
 $row = $stmt->fetch(PDO::FETCH_ASSOC);
 extract($row);
+
+$free = ($row['booking'] == 0);
+
 $start_time = date('H:i', strtotime($row['start_time']));
 $end_time = date('H:i', strtotime($row['end_time']));
 $slots = $doc->generateSlots($start_time, $end_time);
 
+
 ?>
+
 
 <div class="page-content-wrapper">
 
@@ -75,6 +80,8 @@ $slots = $doc->generateSlots($start_time, $end_time);
 
       <div class="pb-3"></div>
     </div>
+
+
     <script src="assets/js/booking.js"></script>
 
 
@@ -138,7 +145,7 @@ $slots = $doc->generateSlots($start_time, $end_time);
               <!-- Note -->
               <div class="mb-3">
                 <label class="form-label">Eventuali note</label>
-                <textarea name="notes" id="notes" class="form-control" rows="3 maxlength="140"></textarea>
+                <textarea name="notes" id="notes" class="form-control" rows="3 maxlength=" 140"></textarea>
                 <small id="notesCounter" class="text-muted">
                   0 / 140 caratteri
                 </small>
