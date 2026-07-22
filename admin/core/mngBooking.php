@@ -155,14 +155,14 @@ if ($operation == "settings") {
         $output .= "<p>Paziente: <b>$patient_name</b><br>";
         $output .= "<b>Data della visita: $italian_date - $time</b>";
         $output .= $doc_block2;
-        $output .= '<p><a href="http://doc.dmweblab.com/delete_booking.php?email=' . $email . '&token=' . $token . '" target="_blank">Cancella appuntamento</a></p>';
+        $output .= '<p><a href="http://dottoressacrosetto.it/delete_booking.php?email=' . $email . '&token=' . $token . '" target="_blank">Cancella appuntamento</a></p>';
         $output .= $doc_block3;
 
         if (mail($to, $subject, $output, $headers)) {
-            header("Location: ../../index.php?msg=sentMail");
+            header("Location: ../../index.php?msg=sentBookingMail");
             exit;
         } else {
-            header("Location: ../../index.php?err=errSendMail");
+            header("Location: ../../index.php?err=errSendBookingMail");
             exit;
         }
     } else {

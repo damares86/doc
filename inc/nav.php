@@ -15,7 +15,7 @@
         </li>
 
         <?php
-          $active = $page_name == 'prenotazione' ? 'class="active"' : '' ;
+          $active = $page_name == 'booking' ? 'class="active"' : '' ;
         ?>
         <li <?= $active ?>>
           <a href="booking.php">
@@ -31,6 +31,16 @@
           <a href="info.php">
             <i class="ti ti-info-square-rounded"></i>
             <span <?= $active ?>>Informazioni</span>
+          </a>
+        </li>
+
+        <?php
+          $active = $page_name == 'contact' ? 'class="active"' : '' ;
+        ?>
+        <li <?= $active ?>>
+          <a href="contact.php">
+            <i class="ti ti-pencil"></i>
+            <span <?= $active ?>>Richieste</span>
           </a>
         </li>
 

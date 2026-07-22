@@ -25,3 +25,25 @@ body{
 .card.booking{
     background-color: #eee;
 }
+
+.info{
+    font-size: 1.3em;
+    text-align:justify;
+    color:#011542;
+}
+
+ul.info li{
+    list-style-type: circle;
+}
+
+.alert-success{
+    background-color: #28a745 !important;
+    color: #fff;
+    font-size: 1.2em;
+}
+
+.alert-danger{
+    background-color: #dc3545 !important;
+    color: #fff;
+    font-size: 1.2em;
+}

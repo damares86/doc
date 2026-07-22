@@ -17,8 +17,9 @@ $page_name = 'index';
           <div class="single-hero-slide bg-overlay" style="background-image: url('assets/img/bg_visual.png'); background-position:center center">
             <div class="h-100 d-flex align-items-center text-center">
               <div class="container">
-                <h3 class="text-white mb-1">Dottoressa Crosetto Maria Chiara </h3>
-                <p class="text-white">Giaveno (TO)</p>
+                <h2 class="text-white mb-1">Dottoressa Crosetto Maria Chiara </h2>
+                <h5 class="text-white">Via Stazione 2, Giaveno (TO)</h5>
+                <!-- <h5 class="text-white">3450579662</h5> -->
                 <!-- <a class="btn btn-creative btn-warning" href="#">Get Started <i class="ti ti-arrow-right"></i></a> -->
               </div>
             </div>
@@ -29,7 +30,9 @@ $page_name = 'index';
     <div class="pt-3"></div>
 
     <div id="home" class="container">
-
+    <?php
+      require "inc/alert.php";
+    ?>
       <div class="card bg-info mb-3">
         <div class="card-body text-white text-center p-2">
           <h2 class="mb-3 text-white">Orari e modalità accesso ambulatorio</h2>
