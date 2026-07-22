@@ -51,72 +51,88 @@ foreach (glob("../locale/$lang/*.php") as $row) {
     require "$row";
 }
 
-$patient_name      = filter_input(INPUT_POST, 'name');
-$email     = filter_input(INPUT_POST, 'email');
-$phone     = filter_input(INPUT_POST, 'phone');
-$notes     = filter_input(INPUT_POST, 'notes') ?? '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['recaptcha_response'])) {
 
-$reason_id = filter_input(INPUT_POST, 'reason_id');
 
-$doc->table = 'doc_contact_reason';
-$doc->id = $reason_id;
-$stmt_reason = $doc->showAllWhere('id', ['id']);
-$row_reason = $stmt_reason->fetch(PDO::FETCH_ASSOC);
-extract($row_reason);
+    $recaptcha_url = 'https://www.google.com/recaptcha/api/siteverify';
+    $recaptcha_secret = '6LetcWAtAAAAAH52Fj00DbbGbjFaxeI-_rkHYX9c';
+    $recaptcha_response = $_POST['recaptcha_response'];
 
-try {
+    // Istanziare e decodificare la richiesta POST:      
 
-    /*
+    $recaptcha = file_get_contents($recaptcha_url . '?secret=' . $recaptcha_secret . '&response=' . $recaptcha_response);
+    $recaptcha = json_decode($recaptcha);
+
+    // Azioni da compiere basate sul punteggio ottenuto:      
+
+    if ($recaptcha->score >= 0.5) {
+
+        $patient_name      = filter_input(INPUT_POST, 'name');
+        $email     = filter_input(INPUT_POST, 'email');
+        $phone     = filter_input(INPUT_POST, 'phone');
+        $notes     = filter_input(INPUT_POST, 'notes') ?? '';
+
+        $reason_id = filter_input(INPUT_POST, 'reason_id');
+
+        $doc->table = 'doc_contact_reason';
+        $doc->id = $reason_id;
+        $stmt_reason = $doc->showAllWhere('id', ['id']);
+        $row_reason = $stmt_reason->fetch(PDO::FETCH_ASSOC);
+        extract($row_reason);
+
+        try {
+
+            /*
     |--------------------------------------------------------------------------
     | Configurazione SMTP
     |--------------------------------------------------------------------------
     */
 
-    $mail->isSMTP();
+            $mail->isSMTP();
 
-    $mail->Host       = 'mail.dmweblab.com ';
-    $mail->SMTPAuth   = true;
-    $mail->Username   = 'noreply@dmweblab.com';
-    $mail->Password   = 'Salomon-86';
+            $mail->Host       = 'mail.dmweblab.com ';
+            $mail->SMTPAuth   = true;
+            $mail->Username   = 'noreply@dmweblab.com';
+            $mail->Password   = 'Salomon-86';
 
-    $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-    $mail->Port       = 587;
+            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+            $mail->Port       = 587;
 
-    $mail->CharSet = 'UTF-8';
+            $mail->CharSet = 'UTF-8';
 
 
-    /*
+            /*
     |--------------------------------------------------------------------------
     | Mittente e destinatari
     |--------------------------------------------------------------------------
     */
 
-    $mail->setFrom(
-        'noreply@dmweblab.com',
-        $row_reason['name']
-    );
+            $mail->setFrom(
+                'noreply@dmweblab.com',
+                $row_reason['name']
+            );
 
-    // medico
-    $mail->addAddress(
-        'dottoressa.crosetto@gmail.com',
-        'Dottoressa'
-    );
+            // medico
+            $mail->addAddress(
+                'dottoressa.crosetto@gmail.com',
+                'Dottoressa'
+            );
 
-    // eventualmente copia segreteria
-    //$mail->addCC('segreteria@dominio.it');
+            // eventualmente copia segreteria
+            //$mail->addCC('segreteria@dominio.it');
 
 
-    /*
+            /*
     |--------------------------------------------------------------------------
     | Contenuto
     |--------------------------------------------------------------------------
     */
 
-    $mail->isHTML(true);
+            $mail->isHTML(true);
 
-    $mail->Subject = $row_reason['name'];
+            $mail->Subject = $row_reason['name'];
 
-    $body = '
+            $body = '
 
     <html>
     <body style="font-family:Arial,sans-serif; font-size:1.5em">
@@ -146,40 +162,55 @@ try {
 
     ';
 
+            $result = $doc->validateAttachment($_FILES['attachment']);
 
-    $mail->Body = $body;
+            if ($result !== true) {
 
+                header('Location: ../../index.php?err=' . $result);
+                exit;
+            }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Allegato
-    |--------------------------------------------------------------------------
-    */
+            // Da qui in poi sei sicuro che il file è valido
 
-    if (
-        isset($_FILES['attachment']) &&
-        $_FILES['attachment']['error'] === UPLOAD_ERR_OK
-    ) {
+            $mail->Body = $body;
 
-        $mail->addAttachment(
-            $_FILES['attachment']['tmp_name'],
-            $_FILES['attachment']['name']
-        );
+            /*
+|--------------------------------------------------------------------------
+| Allegato
+|--------------------------------------------------------------------------
+*/
+
+            if (
+                isset($_FILES['attachment']) &&
+                $_FILES['attachment']['error'] === UPLOAD_ERR_OK
+            ) {
+
+                $mail->addAttachment(
+                    $_FILES['attachment']['tmp_name'],
+                    $_FILES['attachment']['name']
+                );
+            }
+
+            /*
+|--------------------------------------------------------------------------
+| Invio
+|--------------------------------------------------------------------------
+*/
+
+            $mail->send();
+
+            header('Location: ../../index.php?msg=sentContactMail');
+            exit;
+        } catch (Exception $e) {
+
+            header('Location: ../../index.php?err=errSendContactMail');
+            exit;
+        }
+    } else {
+        header("Location: ../../index.php?err=errRecaptcha");
+        exit;
     }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Invio
-    |--------------------------------------------------------------------------
-    */
-
-    $mail->send();
-
-    header('Location: ../../index.php?msg=sentContactMail');
-    exit;
-} catch (Exception $e) {
-
-    header('Location: ../../index.php?err=errSendContactMail');
+} else {
+    header("Location: ../../index.php?msg=errPost");
     exit;
 }

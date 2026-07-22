@@ -129,7 +129,7 @@ foreach (glob("admin/locale/$lang/*.php") as $row) {
   <link rel="manifest" href="manifest.json">
   <!-- Bootstrap 5.3 -->
   <!--<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">-->
-
+  <script src="https://cdn.cookie-script.com/s/e351f680b4229f9cc2448b88296e0bf2.js"></script>
   <!-- DataTables -->
   <link href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" rel="stylesheet">
 

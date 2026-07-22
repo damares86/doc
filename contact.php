@@ -6,6 +6,19 @@ $page_name = 'contact';
 
 ?>
 
+<script src="https://www.google.com/recaptcha/api.js?render=6LetcWAtAAAAAFEFd9BGjolsSFagETtkK_TXhR7y"> </script>
+
+<script>
+  grecaptcha.ready(function() {
+    grecaptcha.execute('6LetcWAtAAAAAFEFd9BGjolsSFagETtkK_TXhR7y', {
+      action: 'submit'
+    }).then(function(token) {
+      var recaptchaResponse = document.getElementById('recaptchaResponse');
+      recaptchaResponse.value = token;
+    });
+  });
+</script>
+
 <div class="page-content-wrapper">
 
   <div>
@@ -74,7 +87,11 @@ $page_name = 'contact';
             </select>
           </div>
           <div class="mb-3">
-            <label class="form-label">Allegati</label>
+            <label class="form-label">
+              Allegati <br>
+              <small>Dimensione massima 10MB<br>
+                Sono permessi solo pdf, jpg, jpeg, png, webp, heic, heif.</small>
+            </label>
             <input class="form-control" type="file" id="formFile" name="attachment" />
           </div>
 
@@ -103,6 +120,7 @@ $page_name = 'contact';
             });
           </script>
 
+          <input type="hidden" name="recaptcha_response" id="recaptchaResponse">
 
 
           <button type="submit" class="btn btn-primary">

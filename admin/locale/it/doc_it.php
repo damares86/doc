@@ -39,3 +39,7 @@ $err_errSendBookingMail = "La prenotazione è confermata, ma c'è stato un error
 $err_notBooked = "Errore nella prenotazione. Si prega di riprovare";
 $err_bookingDeleteFail = "Errore durante l'eliminazione della prenotazione" ;
 $err_errSendContactMail = "Errore nell'invio della mail di contatto. Si prega di riprovare più tardi" ;
+$err_uploadError = "Errore durante il caricamento del file allegato" ;
+$err_fileTooLarge = "Dimensioni troppo elevate file: massima dimensione consentita 10MB" ;
+$err_invalidFileType = "Formato di file non consentito. Sono permessi solo pdf, jpg, jpeg, png, webp, heic, heif" ;
+$err_errRecaptcha = "Spiacenti, non sembri affidabile. Per favore contattaci" ;

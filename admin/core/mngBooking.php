@@ -98,75 +98,98 @@ if ($operation == "settings") {
         exit;
     }
 } else if ($operation == 'booking') {
-
-    $doc->table = 'doc_bookings';
-
-    // formatting datetime
-    $date = filter_input(INPUT_POST, 'date');
-    $italian_date = DateTime::createFromFormat('Y-m-d', $date)->format('d/m/Y');
-    $time = filter_input(INPUT_POST, 'time');
-    $dateTime = DateTime::createFromFormat('Y-m-d H:i', $date . ' ' . $time);
-    $doc->slot_booked = $dateTime->format('Y-m-d H:i:s');
-
-    // checking for double bookings
-    if ($doc->itemExists('slot_booked')) {
-        header('Location: ../../booking.php?err=bookingExists');
-        exit;
-    }
-
-    $patient_name = filter_input(INPUT_POST, 'name');
-    $email = filter_input(INPUT_POST, 'email');
-    $token =  bin2hex(random_bytes(16));
-    $doc->name = $patient_name;
-    $doc->email = $email;
-    $doc->phone = filter_input(INPUT_POST, 'phone');
-    $doc->reason_id = filter_input(INPUT_POST,'reason_id');
-    $doc->notes = filter_input(INPUT_POST, 'notes');
-    $doc->token = $token;
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['recaptcha_response'])) {
 
 
-    if ($doc->insert(['name', 'email', 'phone','reason_id', 'notes', 'slot_booked', 'token'])) {
+        $recaptcha_url = 'https://www.google.com/recaptcha/api/siteverify';
+        $recaptcha_secret = '6LetcWAtAAAAAH52Fj00DbbGbjFaxeI-_rkHYX9c';
+        $recaptcha_response = $_POST['recaptcha_response'];
 
-        ///////////////////////////////////////////////////////////////
-        ////    INVIO EMAIL CON LINK PER MODIFICA O CANCELLAZIONE
-        ///////////////////////////////////////////////////////////////
+        // Istanziare e decodificare la richiesta POST:      
 
-        $doc->table = "doc_settings";
-        $doc->name = "email";
-        $stmt = $doc->showAllWhere('id', ['name']);
+        $recaptcha = file_get_contents($recaptcha_url . '?secret=' . $recaptcha_secret . '&response=' . $recaptcha_response);
+        $recaptcha = json_decode($recaptcha);
 
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        extract($row);
+        // Azioni da compiere basate sul punteggio ottenuto:      
 
-        $from = $row['value'];
-        $to = filter_input(INPUT_POST, 'email');
+        if ($recaptcha->score >= 0.5) {
 
-        // To send HTML mail, the Content-type header must be set
-        $headers  = 'MIME-Version: 1.0' . "\r\n";
-        $headers .= 'Content-type: text/html; charset=iso-8859-1' . "\r\n";
-        // Create email headers
-        $headers .= 'From: ' . $from . "\r\n" .
-            'Reply-To: ' . $from . "\r\n" .
-            'X-Mailer: PHP/' . phpversion();
+            $doc->table = 'doc_bookings';
 
-        $subject = "Prenotazione visita - $italian_date";
+            // formatting datetime
+            $date = filter_input(INPUT_POST, 'date');
+            $italian_date = DateTime::createFromFormat('Y-m-d', $date)->format('d/m/Y');
+            $time = filter_input(INPUT_POST, 'time');
+            $dateTime = DateTime::createFromFormat('Y-m-d H:i', $date . ' ' . $time);
+            $doc->slot_booked = $dateTime->format('Y-m-d H:i:s');
 
-        $output = $doc_block1;
-        $output .= "<p>Paziente: <b>$patient_name</b><br>";
-        $output .= "<b>Data della visita: $italian_date - $time</b>";
-        $output .= $doc_block2;
-        $output .= '<p><a href="http://dottoressacrosetto.it/delete_booking.php?email=' . $email . '&token=' . $token . '" target="_blank">Cancella appuntamento</a></p>';
-        $output .= $doc_block3;
+            // checking for double bookings
+            if ($doc->itemExists('slot_booked')) {
+                header('Location: ../../booking.php?err=bookingExists');
+                exit;
+            }
 
-        if (mail($to, $subject, $output, $headers)) {
-            header("Location: ../../index.php?msg=sentBookingMail");
-            exit;
+            $patient_name = filter_input(INPUT_POST, 'name');
+            $email = filter_input(INPUT_POST, 'email');
+            $token =  bin2hex(random_bytes(16));
+            $doc->name = $patient_name;
+            $doc->email = $email;
+            $doc->phone = filter_input(INPUT_POST, 'phone');
+            $doc->reason_id = filter_input(INPUT_POST, 'reason_id');
+            $doc->notes = filter_input(INPUT_POST, 'notes');
+            $doc->token = $token;
+
+
+            if ($doc->insert(['name', 'email', 'phone', 'reason_id', 'notes', 'slot_booked', 'token'])) {
+
+                ///////////////////////////////////////////////////////////////
+                ////    INVIO EMAIL CON LINK PER MODIFICA O CANCELLAZIONE
+                ///////////////////////////////////////////////////////////////
+
+                $doc->table = "doc_settings";
+                $doc->name = "email";
+                $stmt = $doc->showAllWhere('id', ['name']);
+
+                $row = $stmt->fetch(PDO::FETCH_ASSOC);
+                extract($row);
+
+                $from = $row['value'];
+                $to = filter_input(INPUT_POST, 'email');
+
+                // To send HTML mail, the Content-type header must be set
+                $headers  = 'MIME-Version: 1.0' . "\r\n";
+                $headers .= 'Content-type: text/html; charset=iso-8859-1' . "\r\n";
+                // Create email headers
+                $headers .= 'From: ' . $from . "\r\n" .
+                    'Reply-To: ' . $from . "\r\n" .
+                    'X-Mailer: PHP/' . phpversion();
+
+                $subject = "Prenotazione visita - $italian_date";
+
+                $output = $doc_block1;
+                $output .= "<p>Paziente: <b>$patient_name</b><br>";
+                $output .= "<b>Data della visita: $italian_date - $time</b>";
+                $output .= $doc_block2;
+                $output .= '<p><a href="http://dottoressacrosetto.it/delete_booking.php?email=' . $email . '&token=' . $token . '" target="_blank">Cancella appuntamento</a></p>';
+                $output .= $doc_block3;
+
+                if (mail($to, $subject, $output, $headers)) {
+                    header("Location: ../../index.php?msg=sentBookingMail");
+                    exit;
+                } else {
+                    header("Location: ../../index.php?err=errSendBookingMail");
+                    exit;
+                }
+            } else {
+                header('Location: ../../booking.php?err=notBooked');
+                exit;
+            }
         } else {
-            header("Location: ../../index.php?err=errSendBookingMail");
+            header("Location: ../../index.php?err=errRecaptcha");
             exit;
         }
     } else {
-        header('Location: ../../booking.php?err=notBooked');
+        header("Location: ../../index.php?msg=errPost");
         exit;
     }
 } else if ($operation == 'deleteEmail') {

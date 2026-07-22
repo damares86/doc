@@ -17,11 +17,11 @@ class Doc extends Common
     public $start_time;
     public $end_time;
     public $booking;
-    public $email ;
-    public $phone ;
-    public $reason_id ;
-    public $notes ;
-    public $slot_booked ;
+    public $email;
+    public $phone;
+    public $reason_id;
+    public $notes;
+    public $slot_booked;
     public $token;
 
 
@@ -43,7 +43,7 @@ class Doc extends Common
             return false;
         }
     }
- /**
+    /**
      * Genera gli slot tra due orari.
      * Esempio: 09:00 - 10:00 con durata 15 minuti
      * -> 09:00, 09:15, 09:30, 09:45
@@ -168,12 +168,12 @@ class Doc extends Common
         foreach ($rules as $rule) {
             // Il campo booking contiene la durata dello slot in minuti.
             // Se nullo o <= 0, usa 15 minuti.
-            $this->table = 'doc_settings' ;
-            $this->name = 'slot_length' ;
-            $stmt = $this->showAllWhere('id',['name']);
+            $this->table = 'doc_settings';
+            $this->name = 'slot_length';
+            $stmt = $this->showAllWhere('id', ['name']);
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
             extract($row);
-            $duration = $row['value'] ;
+            $duration = $row['value'];
 
             ////////////////////////////////////////
             // QUI DEVO PRENDERE LA DURATA DELLO SLOT
@@ -216,5 +216,86 @@ class Doc extends Common
         }
 
         return array_values($available);
+    }
+
+    public function validateAttachment(array $file)
+    {
+        // Nessun allegato caricato: valido perché il campo è opzionale
+        if ($file['error'] === UPLOAD_ERR_NO_FILE) {
+            return true;
+        }
+
+        // Errore generico upload
+        if ($file['error'] !== UPLOAD_ERR_OK) {
+            return 'uploadError';
+        }
+
+
+        /*
+    |--------------------------------------------------------------------------
+    | Dimensione massima 10 MB
+    |--------------------------------------------------------------------------
+    */
+
+        if ($file['size'] > 10 * 1024 * 1024) {
+            return 'fileTooLarge';
+        }
+
+
+        /*
+    |--------------------------------------------------------------------------
+    | Controllo estensione
+    |--------------------------------------------------------------------------
+    */
+
+        $allowedExtensions = [
+            'pdf',
+            'jpg',
+            'jpeg',
+            'png',
+            'webp',
+            'heic',
+            'heif'
+        ];
+
+        $extension = strtolower(
+            pathinfo($file['name'], PATHINFO_EXTENSION)
+        );
+
+
+        if (!in_array($extension, $allowedExtensions, true)) {
+            return 'invalidFileType';
+        }
+
+
+        /*
+    |--------------------------------------------------------------------------
+    | Controllo MIME reale
+    |--------------------------------------------------------------------------
+    */
+
+        $allowedMime = [
+            'application/pdf',
+
+            'image/jpeg',
+            'image/png',
+            'image/webp',
+
+            // alcuni server non riconoscono sempre HEIC
+            'image/heic',
+            'image/heif',
+            'application/octet-stream'
+        ];
+
+
+        $mime = mime_content_type($file['tmp_name']);
+
+
+        if (!in_array($mime, $allowedMime, true)) {
+            return 'invalidFileType';
+        }
+
+
+        return true;
     }
 }
