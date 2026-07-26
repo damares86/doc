@@ -33,7 +33,11 @@ body{
 }
 
 ul.info li{
-    list-style-type: circle;
+    list-style-type:disc;
+}
+
+ul.info.space li{
+    margin-bottom: 1em;
 }
 
 .alert-success{

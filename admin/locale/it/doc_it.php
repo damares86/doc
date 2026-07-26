@@ -19,7 +19,7 @@ cliccando sul seguente link.<br>Se il link non dovesse funzionare, può copiarlo
 $doc_block3 = '<p>Grazie,</p>';
 $doc_block3 .= '<p>Dottoressa Crosetto Maria Chiara</p>';
 $doc_block3 .= '<p>-----------------------------------------------------------</p>';
-$doc_block3 .= '<p>ATTENZIONE: questa è una mail automatica, non rispondere a questa mail. Per contattare la dottoressa andare sul <a href="doc.dmweblab.com">sito web</a>.</p>';
+$doc_block3 .= '<p>ATTENZIONE: questa è una mail automatica, non rispondere a questa mail. Per contattare la dottoressa andare sul <a href="http://dottoressacrosetto.it">sito web</a>.</p>';
 $doc_block3 .= '</body></html>';
 
 

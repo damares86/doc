@@ -1,48 +1,65 @@
-let currentDate = new Date().toISOString().split('T')[0];
-
-// oggi e limite massimo (+10 giorni)
-const today = new Date();
-const maxDate = new Date();
-maxDate.setDate(maxDate.getDate() + 10);
-
-function formatDateISO(date) {
-  return date.toISOString().split('T')[0];
-}
-
-function formatDateLabel(dateString) {
-  const d = new Date(dateString);
-  return d.toLocaleDateString('it-IT', {
-    weekday: 'long',
-    day: '2-digit',
-    month: 'long',
-    year: 'numeric'
-  });
-}
+console.log("booking.js caricato");
 
 function isBusinessDay(date) {
-  const day = date.getDay(); // 0 = domenica, 6 = sabato
-  return day >= 1 && day <= 5;
+    const day = date.getDay(); // 0 = domenica, 6 = sabato
+    return day >= 1 && day <= 5;
 }
 
 function getNextBusinessDay(date) {
-  const d = new Date(date);
+    const d = new Date(date);
 
-  do {
-    d.setDate(d.getDate() + 1);
-  } while (!isBusinessDay(d));
+    do {
+        d.setDate(d.getDate() + 1);
+    } while (!isBusinessDay(d));
 
-  return d;
+    return d;
 }
 
 function getPreviousBusinessDay(date) {
-  const d = new Date(date);
+    const d = new Date(date);
 
-  do {
-    d.setDate(d.getDate() - 1);
-  } while (!isBusinessDay(d));
+    do {
+        d.setDate(d.getDate() - 1);
+    } while (!isBusinessDay(d));
 
-  return d;
+    return d;
 }
+
+function formatDateISO(date) {
+    return date.toISOString().split('T')[0];
+}
+
+function formatDateLabel(dateString) {
+    const d = new Date(dateString);
+
+    return d.toLocaleDateString('it-IT', {
+        weekday: 'long',
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric'
+    });
+}
+
+/*
+|--------------------------------------------------------------------------
+| Data iniziale
+|--------------------------------------------------------------------------
+*/
+
+// oggi
+let today = new Date();
+
+// se oggi è sabato o domenica parto dal primo lunedì utile
+if (!isBusinessDay(today)) {
+    today = getNextBusinessDay(today);
+}
+
+// data visualizzata
+let currentDate = formatDateISO(today);
+
+// limite massimo (+10 giorni lavorativi dal punto di partenza)
+const maxDate = new Date(today);
+maxDate.setDate(maxDate.getDate() + 10);
 
 function loadSlots(date) {
   fetch('admin/core/api_slots.php?date=' + date)
@@ -142,24 +159,5 @@ document.getElementById('nextDay').addEventListener('click', function () {
   }
 });
 
-// Se oggi è sabato o domenica parto direttamente dal lunedì
-let startDate = new Date();
-
-if (!isBusinessDay(startDate)) {
-    startDate = getNextBusinessDay(startDate);
-}
-
-currentDate = formatDateISO(startDate);
-
 loadSlots(currentDate);
 
-
-/* // Caricamento iniziale
-while (!isBusinessDay(new Date(currentDate))) {
-  currentDate = formatDateISO(
-    getNextBusinessDay(new Date(currentDate))
-  );
-}
-
-// Caricamento iniziale
-loadSlots(currentDate); */

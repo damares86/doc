@@ -5,6 +5,13 @@ require 'inc/sidebar.php';
 $page_name = 'booking';
 
 $date = $_GET['date'] ?? date('d-m-Y');
+
+$weekday = date('N', strtotime($date));
+
+if ($weekday >= 6) {
+  $date = date('Y-m-d', strtotime('next monday', strtotime($date)));
+}
+
 $today = date('d-m-Y');
 // massimo 10 giorni avanti
 $maxDate = date('d-m-Y', strtotime('+10 days'));
@@ -29,7 +36,7 @@ $free = ($row['booking'] == 0);
 $start_time = date('H:i', strtotime($row['start_time']));
 $end_time = date('H:i', strtotime($row['end_time']));
 $slots = $doc->generateSlots($start_time, $end_time);
-
+echo "ciao";
 
 ?>
 
