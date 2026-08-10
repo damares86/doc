@@ -1,11 +1,11 @@
 {
   "name": "Dottoressa Crosetto",
   "short_name": "Dottoressa Crosetto",
-  "start_url": "https://www.dmweblab.com",
+  "start_url": "https://www.dottoressacrosetto.it",
   "display": "standalone",
   "background_color": "#fff",
   "theme_color": "#fff",
-  "categories": ["mobile", "multipurpose", "blog", "ecommerce", "pwa"],
+  "categories": ["medical"],
   "orientation": "portrait",
   "description": "Dottoressa Crosetto",
   "icons": [

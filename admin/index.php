@@ -49,7 +49,7 @@ $layout = $row['value'];
       if ($layout == 'h') {
         include "inc/topbar.php";
       ?>
-        <div class="content-wrapper container">
+        <div class="content-wrapper container px-0 px-md-3">
         <?php
       }
         ?>

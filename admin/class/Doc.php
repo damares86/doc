@@ -23,6 +23,7 @@ class Doc extends Common
     public $notes;
     public $slot_booked;
     public $token;
+    public $msg;
 
 
     function updateValue()

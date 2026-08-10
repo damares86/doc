@@ -51,7 +51,7 @@ foreach (glob("../locale/$lang/*.php") as $row) {
     require "$row";
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['recaptcha_response'])) {
+/* if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['recaptcha_response'])) {
 
 
     $recaptcha_url = 'https://www.google.com/recaptcha/api/siteverify';
@@ -65,7 +65,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['recaptcha_response'])
 
     // Azioni da compiere basate sul punteggio ottenuto:      
 
-    if ($recaptcha->score >= 0.5) {
+    if ($recaptcha->score >= 0.5) { */
+
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+
+    $recaptcha_secret = '6Lf5qX4tAAAAAHCtgQlg9TiOHHOeQItDMwZ0_Xuq';
+    $recaptcha_response = $_POST['g-recaptcha-response'] ?? '';
+
+    if (empty($recaptcha_response)) {
+        die('Verifica reCAPTCHA non completata.');
+    }
+
+    $recaptcha_url = 'https://www.google.com/recaptcha/api/siteverify';
+
+    $data = [
+        'secret'   => $recaptcha_secret,
+        'response' => $recaptcha_response,
+        'remoteip' => $_SERVER['REMOTE_ADDR'] ?? null
+    ];
+
+    $options = [
+        'http' => [
+            'header'  => "Content-type: application/x-www-form-urlencoded\r\n",
+            'method'  => 'POST',
+            'content' => http_build_query($data)
+        ]
+    ];
+
+    $context = stream_context_create($options);
+
+    $result = file_get_contents($recaptcha_url, false, $context);
+    $recaptcha = json_decode($result);
+
+    if (!$recaptcha || empty($recaptcha->success)) {
+        die('Verifica reCAPTCHA fallita.');
+    }
+    if ($recaptcha->success) {
 
         $patient_name      = filter_input(INPUT_POST, 'name');
         $email     = filter_input(INPUT_POST, 'email');

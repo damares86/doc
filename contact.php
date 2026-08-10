@@ -6,7 +6,7 @@ $page_name = 'contact';
 
 ?>
 
-<script src="https://www.google.com/recaptcha/api.js?render=6LetcWAtAAAAAFEFd9BGjolsSFagETtkK_TXhR7y"> </script>
+<!-- <script src="https://www.google.com/recaptcha/api.js?render=6LetcWAtAAAAAFEFd9BGjolsSFagETtkK_TXhR7y"> </script>
 
 <script>
   grecaptcha.ready(function() {
@@ -17,7 +17,9 @@ $page_name = 'contact';
       recaptchaResponse.value = token;
     });
   });
-</script>
+</script> -->
+
+<script src="https://www.google.com/recaptcha/api.js" async defer></script>
 
 <div class="page-content-wrapper">
 
@@ -41,7 +43,7 @@ $page_name = 'contact';
 
     <div class="container py-3">
 
-      <form action="admin/core/mngContact.php" method="post" enctype="multipart/form-data">
+      <form action="admin/core/mngContact.php" method="post" enctype="multipart/form-data" id="contactForm">
         <h4 class="text-center">Richieste studio medico</h5>
           <p class="mb-3">
             <strong id="bookingDateLabel"></strong>
@@ -120,15 +122,33 @@ $page_name = 'contact';
             });
           </script>
 
-          <input type="hidden" name="recaptcha_response" id="recaptchaResponse">
-
-
+          <!--<input type="hidden" name="recaptcha_response" id="recaptchaResponse">-->
+          <div class="g-recaptcha" data-sitekey="6Lf5qX4tAAAAADpd_njyg0LyvcmbvqPFP0TCotiq"></div>
+          <div id="recaptchaError" style="display:none; color:#c00; margin-top:8px;">
+            Per inviare il modulo, completa la verifica "Non sono un robot".
+          </div>
           <button type="submit" class="btn btn-primary">
             Invia
           </button>
 
 
       </form>
+
+      <script>
+        document.getElementById('contactForm').addEventListener('submit', function(event) {
+
+          var response = grecaptcha.getResponse();
+          var error = document.getElementById('recaptchaError');
+
+          if (response.length === 0) {
+            event.preventDefault();
+            error.style.display = 'block';
+            return false;
+          }
+
+          error.style.display = 'none';
+        });
+      </script>
 
     </div>
     <?php

@@ -30,15 +30,28 @@ $page_name = 'index';
     <div class="pt-3"></div>
 
     <div id="home" class="container">
-    <?php
+      <?php
       require "inc/alert.php";
-    ?>
+      ?>
       <div class="card bg-info mb-3">
         <div class="card-body text-white text-center p-2">
           <h2 class="mb-3 text-white">Orari e modalità accesso ambulatorio</h2>
-<!--           <div class="card bg-warning mb-3">
-            Attenzione
-          </div> -->
+          <?php
+          $doc->table = 'doc_messages';
+          $stmt_msg = $doc->showAll('id');
+          $row_msg = $stmt_msg->fetch(PDO::FETCH_ASSOC);
+          $date =  date('Y-m-d');
+          if($date >= $row_msg['start_time'] && $date <= $row_msg['end_time']){
+          ?>
+
+          <div class="card bg-warning mb-3 p-2">
+            Avviso<br>
+            Gentili pazienti,<br>
+            venerdì 14 agosto PREFESTIVO. Per urgenze contattare il 116117.<br> Grazie.
+          </div>
+        <?php
+        }
+        ?>
           <ul>
             <?php
             // legenda per i giorni

@@ -97,8 +97,23 @@ if ($operation == "settings") {
         header("Location: ../index.php?p=bookingSettings&err=timetableUpdateErr");
         exit;
     }
+} else if ($operation == "msg") {
+
+    $doc->table = "doc_messages";
+    $doc->id = 1;
+    $doc->msg = filter_input(INPUT_POST, 'msg');
+    $doc->start_time = filter_input(INPUT_POST, 'start');
+    $doc->end_time = filter_input(INPUT_POST, 'end');
+
+    if ($doc->update(['msg', 'start_time', 'end_time'], 'id')) {
+        header("Location: ../index.php?p=addMessage&msg=msgUpdate");
+        exit;
+    } else {
+        header("Location: ../index.php?p=addMessage&err=msgUpdateErr");
+        exit;
+    }
 } else if ($operation == 'booking') {
-    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['recaptcha_response'])) {
+    /*   if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['recaptcha_response'])) {
 
 
         $recaptcha_url = 'https://www.google.com/recaptcha/api/siteverify';
@@ -112,8 +127,42 @@ if ($operation == "settings") {
 
         // Azioni da compiere basate sul punteggio ottenuto:      
 
-        if ($recaptcha->score >= 0.5) {
+        if ($recaptcha->score >= 0.5) { */
 
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+
+        $recaptcha_secret = '6Lf5qX4tAAAAAHCtgQlg9TiOHHOeQItDMwZ0_Xuq';
+        $recaptcha_response = $_POST['g-recaptcha-response'] ?? '';
+
+        if (empty($recaptcha_response)) {
+            die('Verifica reCAPTCHA non completata.');
+        }
+
+        $recaptcha_url = 'https://www.google.com/recaptcha/api/siteverify';
+
+        $data = [
+            'secret'   => $recaptcha_secret,
+            'response' => $recaptcha_response,
+            'remoteip' => $_SERVER['REMOTE_ADDR'] ?? null
+        ];
+
+        $options = [
+            'http' => [
+                'header'  => "Content-type: application/x-www-form-urlencoded\r\n",
+                'method'  => 'POST',
+                'content' => http_build_query($data)
+            ]
+        ];
+
+        $context = stream_context_create($options);
+
+        $result = file_get_contents($recaptcha_url, false, $context);
+        $recaptcha = json_decode($result);
+
+        if (!$recaptcha || empty($recaptcha->success)) {
+            die('Verifica reCAPTCHA fallita.');
+        }
+        if ($recaptcha->success) {
             $doc->table = 'doc_bookings';
 
             // formatting datetime
@@ -168,7 +217,7 @@ if ($operation == "settings") {
 
                 $output = $doc_block1;
                 $output .= "<p>Paziente: <b>$patient_name</b><br>";
-                $output .= "<b>Data della visita: $italian_date - $time</b>";
+                $output .= "Data della visita:<b> $italian_date - $time</b>";
                 $output .= $doc_block2;
                 $output .= '<p><a href="http://dottoressacrosetto.it/delete_booking.php?email=' . $email . '&token=' . $token . '" target="_blank">Cancella appuntamento</a></p>';
                 $output .= $doc_block3;
