@@ -35,6 +35,11 @@ if ($row_debug['value'] == 1) {
     ));
 }
 
+require '../../vendor/autoload.php';
+
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+
 // check the language set
 $setting->name = "lang";
 $stmt = $setting->showByName();
@@ -205,14 +210,6 @@ if ($operation == "settings") {
                 $from = $row['value'];
                 $to = filter_input(INPUT_POST, 'email');
 
-                // To send HTML mail, the Content-type header must be set
-                $headers  = 'MIME-Version: 1.0' . "\r\n";
-                $headers .= 'Content-type: text/html; charset=iso-8859-1' . "\r\n";
-                // Create email headers
-                $headers .= 'From: ' . $from . "\r\n" .
-                    'Reply-To: ' . $from . "\r\n" .
-                    'X-Mailer: PHP/' . phpversion();
-
                 $subject = "Prenotazione visita - $italian_date";
 
                 $output = $doc_block1;
@@ -222,10 +219,49 @@ if ($operation == "settings") {
                 $output .= '<p><a href="http://dottoressacrosetto.it/delete_booking.php?email=' . $email . '&token=' . $token . '" target="_blank">Cancella appuntamento</a></p>';
                 $output .= $doc_block3;
 
-                if (mail($to, $subject, $output, $headers)) {
+
+                /*
+|--------------------------------------------------------------------------
+| Invio email con PHPMailer
+|--------------------------------------------------------------------------
+*/
+
+                try {
+
+                    $mail = new PHPMailer(true);
+
+                    // SMTP
+                    $mail->isSMTP();
+                    $mail->Host = 'mail.dmweblab.com';
+                    $mail->SMTPAuth = true;
+                    $mail->Username = 'noreply@dmweblab.com';
+                    $mail->Password = 'Salomon-86';
+                    $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+                    $mail->Port = 587;
+
+                    // Encoding
+                    $mail->CharSet = 'UTF-8';
+
+                    // Mittente
+                    $mail->setFrom($from, 'Prenotazioni - dottoressa Crosetto');
+
+                    // Destinatario
+                    $mail->addAddress($to, $patient_name);
+
+                    // Contenuto
+                    $mail->isHTML(true);
+                    $mail->Subject = $subject;
+                    $mail->Body = $output;
+
+                    // Invio
+                    $mail->send();
+
                     header("Location: ../../index.php?msg=sentBookingMail");
                     exit;
-                } else {
+                } catch (Exception $e) {
+
+                    error_log($mail->ErrorInfo);
+
                     header("Location: ../../index.php?err=errSendBookingMail");
                     exit;
                 }
