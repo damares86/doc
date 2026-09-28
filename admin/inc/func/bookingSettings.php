@@ -2,6 +2,13 @@
 
 declare(strict_types=1);
 
+if (!isset($doc) || !($doc instanceof Doc)) {
+    $doc = new Doc($db);
+    if (!empty($prefix)) {
+        $doc->prx = $prefix . '_';
+    }
+}
+
 $days = [
     1 => "Lunedì",
     2 => "Martedì",

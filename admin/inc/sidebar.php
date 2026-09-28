@@ -50,13 +50,13 @@
         <ul class="sidebar_menu list-unstyled">
             <?php
             $role_id = $_SESSION['role_id'];
-            $rolessection->table = 'rolesSectionChild';
+            $rolessection->table = 'roles_section_child';
             $rolessection->role_id = $role_id;
             $permissionChild = $rolessection->showAllWhere('id', ['role_id']);
             $permChildArr = $permissionChild->fetch(PDO::FETCH_ASSOC);
             extract($permChildArr);
             $sectionChild = explode(',', $permChildArr['section_id']);
-            $section->table = 'sectionParent';
+            $section->table = 'section_parent';
             $stmt = $section->showAll('id');
 
             while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
@@ -67,7 +67,7 @@
                 $link = $row['link'] == "index" ? "index.php" : "index.php?p=" . $row['link'] . "";
                 $parent_id = $row['id'];
 
-                $section->table = 'sectionChild';
+                $section->table = 'section_child';
                 $section->parent_id = $row['id'];
                 $child = $section->showAllWhere('id', ['parent_id']);
                 $countChildPermissions = 0;
@@ -99,7 +99,7 @@
                 }
 
                 $rolessection->role_id = $role_id;
-                $rolessection->table = 'rolesSection';
+                $rolessection->table = 'roles_section';
                 $permissionParent = $rolessection->showAllWhere('id', ['role_id']);
                 $row3 = $permissionParent->fetch(PDO::FETCH_ASSOC);
                 extract($row3);

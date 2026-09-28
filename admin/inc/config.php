@@ -48,20 +48,30 @@ $home = new Home($db);
 $rolessection = new RolesSection($db);
 $accountroles = new AccountRoles($db);
 
-// Fallback dynamic instantiation file for backward compatibility with plugins
-if (!is_file(__DIR__ . '/class_initialize.php')) {
-    $classFiles = glob(__DIR__ . '/../class/*.php') ?: [];
-    rsort($classFiles);
-    $initContent = "<?php\n// Auto-generated class initialization\n";
-    foreach ($classFiles as $cFile) {
-        $cName = pathinfo($cFile, PATHINFO_FILENAME);
-        $varName = strtolower($cName);
-        $initContent .= "\${$varName} = new {$cName}(\$db);\n";
+$prx = !empty($prefix) ? $prefix . '_' : '';
+$common->prx = $prx;
+$account->prx = $prx;
+$auth->prx = $prx;
+$role->prx = $prx;
+$setting->prx = $prx;
+$section->prx = $prx;
+$file->prx = $prx;
+$plugin->prx = $prx;
+$home->prx = $prx;
+$rolessection->prx = $prx;
+$accountroles->prx = $prx;
+
+// Auto-instantiate any additional classes found in admin/class/ (e.g. Doc, etc.)
+$extraClasses = glob(__DIR__ . '/../class/*.php') ?: [];
+foreach ($extraClasses as $cPath) {
+    $cName = pathinfo($cPath, PATHINFO_FILENAME);
+    $varName = strtolower($cName);
+    if (!isset($$varName) && class_exists($cName)) {
+        $$varName = new $cName($db);
+        if (isset($$varName->prx)) {
+            $$varName->prx = $prx;
+        }
     }
-    if (!empty($prefix)) {
-        $initContent .= "\$common->prx = '{$prefix}_';\n";
-    }
-    file_put_contents(__DIR__ . '/class_initialize.php', $initContent);
 }
 
 // Session check

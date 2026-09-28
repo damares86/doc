@@ -5,6 +5,13 @@ declare(strict_types=1);
 require_once __DIR__ . '/inc/header.php';
 require_once __DIR__ . '/inc/sidebar.php';
 
+if (!isset($doc) || !($doc instanceof Doc)) {
+    $doc = new Doc($db);
+    if (!empty($prefix)) {
+        $doc->prx = $prefix . '_';
+    }
+}
+
 $page_name = 'contact';
 
 $doc->table = 'doc_contact_reason';

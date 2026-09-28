@@ -13,6 +13,13 @@ if ($token === '' || $email === '') {
 require_once __DIR__ . '/inc/header.php';
 require_once __DIR__ . '/inc/sidebar.php';
 
+if (!isset($doc) || !($doc instanceof Doc)) {
+    $doc = new Doc($db);
+    if (!empty($prefix)) {
+        $doc->prx = $prefix . '_';
+    }
+}
+
 $page_name = 'index';
 
 $doc->table = 'doc_bookings';

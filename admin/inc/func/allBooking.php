@@ -2,6 +2,13 @@
 
 declare(strict_types=1);
 
+if (!isset($doc) || !($doc instanceof Doc)) {
+    $doc = new Doc($db);
+    if (!empty($prefix)) {
+        $doc->prx = $prefix . '_';
+    }
+}
+
 $selectedDate = (string) ($_GET['date'] ?? date('Y-m-d'));
 if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $selectedDate)) {
     $selectedDate = date('Y-m-d');
