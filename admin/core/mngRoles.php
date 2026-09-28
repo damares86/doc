@@ -1,5 +1,6 @@
 <?php
 
+declare(strict_types=1);
 
 ##############    Damares    ###############
 #                                          #
@@ -9,97 +10,72 @@
 #                                          #
 ############################################
 
+require_once __DIR__ . '/coreConfig.php';
 
-require __DIR__ . "/coreConfig.php";
-
-// check if there's a role to delete
-
-if (filter_input(INPUT_GET, "idToDel")) {
-
-    $idToDel = filter_input(INPUT_GET, "idToDel");
-
+// Delete role
+$idToDel = filter_input(INPUT_GET, 'idToDel', FILTER_VALIDATE_INT);
+if ($idToDel !== false && $idToDel !== null) {
     $rolessection->role_id = $idToDel;
-
     $stmt = $rolessection->showAllWhere('id', ['role_id']);
 
-    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-        extract($row);
-
-        $rolessection->id = $row['id'];
-        $rolessection->delete('id');
+    if ($stmt) {
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $rolessection->id = $row['id'];
+            $rolessection->delete('id');
+        }
     }
 
     $role->id = $idToDel;
 
     if ($role->delete('id')) {
-        header("Location: ../index.php?p=allRoles&msg=roleDel");
-        exit;
-    } else {
-        header("Location: ../index.php?p=allRoles&err=roleNoDel");
+        header('Location: ../index.php?p=allRoles&msg=roleDel');
         exit;
     }
+
+    header('Location: ../index.php?p=allRoles&err=roleNoDel');
+    exit;
 }
 
-$operation = filter_input(INPUT_POST, "operation");
+$operation = (string) (filter_input(INPUT_POST, 'operation', FILTER_DEFAULT) ?? '');
 
-// check if there's a role to edit or add
-
-
-if ($operation == "edit") {
-
-    $idToMod = filter_input(INPUT_POST, "idToMod");
+if ($operation === 'edit') {
+    $idToMod = (int) (filter_input(INPUT_POST, 'idToMod', FILTER_VALIDATE_INT) ?? 0);
     $role->id = $idToMod;
 
-    $url_tablePage = filter_input(INPUT_POST,'url_tablePage');
-    $url_pageName = filter_input(INPUT_POST,'url_pageName');
+    $url_tablePage = (string) (filter_input(INPUT_POST, 'url_tablePage', FILTER_DEFAULT) ?? '');
+    $url_pageName = (string) (filter_input(INPUT_POST, 'url_pageName', FILTER_DEFAULT) ?? '');
+    $url_data = "&tablePage=" . urlencode($url_tablePage) . "&pageName=" . urlencode($url_pageName);
 
-    $url_data = "&tablePage=$url_tablePage&pageName=$url_pageName" ;
-
-    $role->rolename = filter_input(INPUT_POST, "rolename");
-    if (filter_input(INPUT_POST, "redirect")) {
-        $role->redirect = filter_input(INPUT_POST, "redirect");
-    } else {
-        $role->redirect = "none";
-    }
+    $role->rolename = (string) (filter_input(INPUT_POST, 'rolename', FILTER_DEFAULT) ?? '');
+    $redirectVal = (string) (filter_input(INPUT_POST, 'redirect', FILTER_DEFAULT) ?? '');
+    $role->redirect = !empty($redirectVal) ? $redirectVal : 'none';
 
     if ($role->update(['rolename', 'redirect'], 'id')) {
-        $sectionParent = $_POST['section'];
-        if (is_array($sectionParent)) {
-            $sectionParentStr = implode(',', $sectionParent);
-        } else {
-            $sectionParentStr = '';
-        }
-        $sectionChild = $_POST['sectionChild'];
+        $sectionParent = $_POST['section'] ?? [];
+        $sectionParentStr = is_array($sectionParent) ? implode(',', array_map('strval', $sectionParent)) : '';
 
+        $sectionChild = $_POST['sectionChild'] ?? [];
         $sectionChildStr = '';
         if (is_array($sectionChild)) {
             $sectionChildArr = [];
             foreach ($sectionChild as $item) {
-                $rolessection->table = 'sectionChild';
-                $rolessection->id = $item;
-                $stmt = $rolessection->showAllWhere('id', ['id']);
-                $row = $stmt->fetch(PDO::FETCH_ASSOC);
-                extract($row);
-                if (is_array($sectionParent) && in_array($row['parent_id'], $sectionParent)) {
-                    $sectionChildArr[] = $item;
+                $section->table = 'section_child';
+                $section->id = $item;
+                $stmt = $section->showAllWhere('id', ['id']);
+                if ($stmt) {
+                    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+                    if ($row && is_array($sectionParent) && in_array($row['parent_id'], $sectionParent, false)) {
+                        $sectionChildArr[] = (string) $item;
+                    }
                 }
             }
             $sectionChildStr = implode(',', $sectionChildArr);
-        } else {
-            $sectionChildStr = '';
         }
-
-        $role->rolename = filter_input(INPUT_POST, "rolename");
-        $role->table = 'roles';
-
-        $stmt = $role->showAllWhere('id', ['rolename']);
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        extract($row);
 
         $error = 0;
 
-        $rolessection->table = 'rolesSection';
-        $rolessection->role_id = $row['id'];
+        $rolessection->table = 'roles_section';
+        $rolessection->role_id = $idToMod;
         $rolessection->section_id = $sectionParentStr;
 
         if ($rolessection->itemExists('role_id')) {
@@ -112,8 +88,8 @@ if ($operation == "edit") {
             }
         }
 
-        $rolessection->table = 'rolesSectionChild';
-        $rolessection->role_id = $row['id'];
+        $rolessection->table = 'roles_section_child';
+        $rolessection->role_id = $idToMod;
         $rolessection->section_id = $sectionChildStr;
 
         if ($rolessection->itemExists('role_id')) {
@@ -126,99 +102,88 @@ if ($operation == "edit") {
             }
         }
 
-        $errMsg = '';
-
-        if ($error > 0) {
-            $errMsg = 'err=rolePermFail';
-        }
-
-
-        header("Location: ../index.php?p=editRole$url_data&idToMod=$idToMod&msg=roleEdit$errMsg");
-        exit;
-    } else {
-        header("Location: ../index.php?p=allRoles&err=roleNoEdit$url_data");
+        $errMsg = $error > 0 ? '&err=rolePermFail' : '';
+        header("Location: ../index.php?p=editRole{$url_data}&idToMod={$idToMod}&msg=roleEdit{$errMsg}");
         exit;
     }
-} else if ($operation == "add") {
 
-    $rolename = filter_input(INPUT_POST, "rolename");
-    $role->rolename = $rolename;
-
-    if ($role->roleExists()) {
-        header("Location: ../index.php?p=addRole&err=roleExist$url_data");
-        exit;
-    } else {
-        $role->rolename = filter_input(INPUT_POST, "rolename");
-
-        if (filter_input(INPUT_POST, "redirect")) {
-            $role->redirect = filter_input(INPUT_POST, "redirect");
-        } else {
-            $role->redirect = "none";
-        }
-
-        if ($role->insert(['rolename', 'redirect'])) {
-
-            $role->rolename = $rolename;
-            $role->table = "roles";
-            $stmt1 = $role->showAllWhere('id', ['rolename']);
-            $row1 = $stmt1->fetch(PDO::FETCH_ASSOC);
-            extract($row1);
-
-            $sectionParent = $_POST['section'];
-            $sectionParentStr = implode(',', $sectionParent);
-            $sectionChild = $_POST['sectionChild'];
-
-            $sectionChildStr = '';
-            if (is_array($sectionChild)) {
-                $sectionChildArr = [];
-                foreach ($sectionChild as $item) {
-                    $rolessection->table = 'sectionChild';
-                    $rolessection->id = $item;
-                    $stmt = $rolessection->showAllWhere('id', ['id']);
-                    $row = $stmt->fetch(PDO::FETCH_ASSOC);
-                    extract($row);
-                    if (in_array($row['parent_id'], $sectionParent)) {
-                        $sectionChildArr[] = $item;
-                    }
-                }
-
-                $sectionChildStr = implode(',', $sectionChildArr);
-            }
-
-            $error = 0;
-
-            $rolessection->table = 'rolesSection';
-            $rolessection->role_id = $row1['id'];
-            $rolessection->section_id = $sectionParentStr;
-
-            if (!$rolessection->insert(['section_id', 'role_id'])) {
-                $error++;
-            }
-
-            $rolessection->table = 'rolesSectionChild';
-            $rolessection->role_id = $row1['id'];
-            $rolessection->section_id = $sectionChildStr;
-
-            if (!$rolessection->insert(['section_id', 'role_id'])) {
-                $error++;
-            }
-
-            $errMsg = '';
-
-            if ($error > 0) {
-                $errMsg = 'err=rolePermFail';
-            }
-
-            //success
-            header("Location: ../index.php?p=allRoles$url_data&msg=roleSucc$errMsg");
-            exit;
-        } else {
-            //success
-            header("Location: ../index.php?p=allRoles&err=roleFail$url_data");
-            exit;
-        }
-    }
-} else {
-    header("Location: ../index.php?p=allRoles&msg=noPost");
+    header("Location: ../index.php?p=allRoles&err=roleNoEdit{$url_data}");
     exit;
 }
+
+if ($operation === 'add') {
+    $rolename = (string) (filter_input(INPUT_POST, 'rolename', FILTER_DEFAULT) ?? '');
+    $role->rolename = $rolename;
+
+    $url_tablePage = (string) (filter_input(INPUT_POST, 'url_tablePage', FILTER_DEFAULT) ?? '');
+    $url_pageName = (string) (filter_input(INPUT_POST, 'url_pageName', FILTER_DEFAULT) ?? '');
+    $url_data = "&tablePage=" . urlencode($url_tablePage) . "&pageName=" . urlencode($url_pageName);
+
+    if ($role->roleExists()) {
+        header("Location: ../index.php?p=addRole&err=roleExist{$url_data}");
+        exit;
+    }
+
+    $redirectVal = (string) (filter_input(INPUT_POST, 'redirect', FILTER_DEFAULT) ?? '');
+    $role->redirect = !empty($redirectVal) ? $redirectVal : 'none';
+
+    if ($role->insert(['rolename', 'redirect'])) {
+        $stmt1 = $role->showAllWhere('id', ['rolename']);
+        $newRoleId = 0;
+        if ($stmt1) {
+            $row1 = $stmt1->fetch(PDO::FETCH_ASSOC);
+            if ($row1) {
+                $newRoleId = (int) $row1['id'];
+            }
+        }
+
+        $sectionParent = $_POST['section'] ?? [];
+        $sectionParentStr = is_array($sectionParent) ? implode(',', array_map('strval', $sectionParent)) : '';
+
+        $sectionChild = $_POST['sectionChild'] ?? [];
+        $sectionChildStr = '';
+        if (is_array($sectionChild)) {
+            $sectionChildArr = [];
+            foreach ($sectionChild as $item) {
+                $section->table = 'section_child';
+                $section->id = $item;
+                $stmt = $section->showAllWhere('id', ['id']);
+                if ($stmt) {
+                    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+                    if ($row && is_array($sectionParent) && in_array($row['parent_id'], $sectionParent, false)) {
+                        $sectionChildArr[] = (string) $item;
+                    }
+                }
+            }
+            $sectionChildStr = implode(',', $sectionChildArr);
+        }
+
+        $error = 0;
+
+        $rolessection->table = 'roles_section';
+        $rolessection->role_id = $newRoleId;
+        $rolessection->section_id = $sectionParentStr;
+
+        if (!$rolessection->insert(['section_id', 'role_id'])) {
+            $error++;
+        }
+
+        $rolessection->table = 'roles_section_child';
+        $rolessection->role_id = $newRoleId;
+        $rolessection->section_id = $sectionChildStr;
+
+        if (!$rolessection->insert(['section_id', 'role_id'])) {
+            $error++;
+        }
+
+        $errMsg = $error > 0 ? '&err=rolePermFail' : '';
+        header("Location: ../index.php?p=allRoles{$url_data}&msg=roleSucc{$errMsg}");
+        exit;
+    }
+
+    header("Location: ../index.php?p=allRoles&err=roleFail{$url_data}");
+    exit;
+}
+
+header('Location: ../index.php?p=allRoles&msg=noPost');
+exit;

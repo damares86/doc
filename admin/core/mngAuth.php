@@ -1,4 +1,7 @@
 <?php
+
+declare(strict_types=1);
+
 ##############    Damares    ###############
 #                                          #
 #    A backend project by DM WebLab        #
@@ -7,81 +10,79 @@
 #                                          #
 ############################################
 
-spl_autoload_register('autoloader');
-
-function autoloader($class){
-    include("../class/$class.php");
-}
+spl_autoload_register(static function (string $class): void {
+    $file = __DIR__ . "/../class/{$class}.php";
+    if (is_file($file)) {
+        require_once $file;
+    }
+});
 
 $database = new Database();
 $db = $database->getConnection();
 
-include "../inc/class_initialize.php";
+$common = new Common($db);
+$account = new Account($db);
+$auth = new Auth($db);
+$role = new Role($db);
+$setting = new Setting($db);
+$accountroles = new AccountRoles($db);
 
-// get the form data
-$postpass = $_POST['password'];
+$postpass = (string) ($_POST['password'] ?? '');
+$email = (string) (filter_input(INPUT_POST, 'email', FILTER_SANITIZE_EMAIL) ?? '');
+$auth->email = $email;
 
-$auth->email = $_POST['email'];
-$email = $_POST['email'];
-
-// check if the given email exist in db
 $email_exists = $auth->emailExists();
 
-// match the email and the password
-if($email_exists && password_verify($postpass,$auth->password)){
-    if($_POST['remember']){
-        $token = md5($email);
-        $addToken= substr(md5(uniqid(rand(),1)),3,10);
-        $token = $token . $addToken;
-        
-        $account->email = $email ;
-        $account->auth_token = $token ;
-        
-        $account->update(['auth_token'],'email') ;
-        setcookie("damares-login", $auth->id . "," . $token, time()+(60 * 60 *24 * 365 *10 ),"/");
-    }
-    
-    session_start();
-    $accountroles->account_id = $auth->id; 
-    
-    
-    $role_id = $accountroles->showAccountRolesId();
-    $role->id = $role_id ;
-    
-    
-    // set session data
-    $_SESSION['loggedin'] = true ;
-    $_SESSION['account_id'] = $auth->id;
-    $_SESSION['internal'] = 1 ;
-    $_SESSION['role_id'] = $role_id;
-    $_SESSION['rolename'] = $role->showRolenameById();
-    $_SESSION['username'] = $auth->username;
-    $_SESSION['avatar'] = $auth->avatar;
-    // update the login log time
-    $time=date("Y-m-d G:i:s");
-    $auth->updateLog($time);
-    
-    $setting->name = "role_redirect";
-    $stmt = $setting->showAllWhere('id', ['name']);
-    $row = $stmt->fetch(PDO::FETCH_ASSOC);
-    $redir = $row['value'];
-  
-    if ($redir == 1) {
-      $stmt = $role->showAllWhere('id', ['id']);
-      $row = $stmt->fetch(PDO::FETCH_ASSOC);
-      extract($row);
-      if ($row['redirect'] != "none") {
-        header("Location: " . $row['redirect'] . "");
-        exit;
-      }
+if ($email_exists && !empty($auth->password) && password_verify($postpass, (string) $auth->password)) {
+    if (!empty($_POST['remember'])) {
+        $token = bin2hex(random_bytes(32));
+        $account->email = $email;
+        $account->auth_token = $token;
+        $account->update(['auth_token'], 'email');
+
+        setcookie('damares-login', "{$auth->id},{$token}", [
+            'expires' => time() + (86400 * 30),
+            'path' => '/',
+            'httponly' => true,
+            'samesite' => 'Lax',
+        ]);
     }
 
-    header("Location: ../");
-    exit;
-    
-} else {
-    
-    // header("Location: ../../login/auth-login.php?err=errUserPsw");
-    header("Location: ../../index.php?err=errUserPsw");
+    if (session_status() === PHP_SESSION_NONE) {
+        session_start();
+    }
+
+    $accountroles->account_id = $auth->id;
+    $role_id = $accountroles->showAccountRolesId();
+    $role->id = $role_id;
+
+    $_SESSION['loggedin'] = true;
+    $_SESSION['account_id'] = $auth->id;
+    $_SESSION['internal'] = 1;
+    $_SESSION['role_id'] = $role_id;
+    $_SESSION['rolename'] = $role->showRolenameById() ?? '';
+    $_SESSION['username'] = $auth->username ?? '';
+    $_SESSION['avatar'] = $auth->avatar ?? 'default.png';
+
+    $auth->updateLog(date('Y-m-d H:i:s'));
+
+    $setting->name = 'role_redirect';
+    $stmt = $setting->showAllWhere('id', ['name']);
+    $row = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : null;
+    $redir = (string) ($row['value'] ?? '0');
+
+    if ($redir === '1') {
+        $stmtRole = $role->showAllWhere('id', ['id']);
+        $rowRole = $stmtRole ? $stmtRole->fetch(PDO::FETCH_ASSOC) : null;
+        if ($rowRole && !empty($rowRole['redirect']) && $rowRole['redirect'] !== 'none') {
+            header('Location: ' . $rowRole['redirect']);
+            exit;
+        }
+    }
+
+    header('Location: ../');
     exit;
 }
+
+header('Location: ../../login/auth-login.php?err=errUserPsw');
+exit;

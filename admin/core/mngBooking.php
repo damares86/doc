@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 ##############    Damares    ###############
 #                                          #
 #    A backend project by DM WebLab        #
@@ -8,292 +10,289 @@
 #                                          #
 ############################################
 
-
-spl_autoload_register('autoloader');
-
-function autoloader($class)
-{
-    include("../class/$class.php");
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
 }
 
-require "../core/prefix.php";
+spl_autoload_register(static function (string $class): void {
+    $file = __DIR__ . "/../class/{$class}.php";
+    if (is_file($file)) {
+        require_once $file;
+    }
+});
+
+require_once __DIR__ . '/prefix.php';
 
 $database = new Database();
 $db = $database->getConnection();
-include "../inc/class_initialize.php";
 
-$setting->name = "debug";
-$dbg = $setting->showAllWhere('id', ['name']);
-$row_debug = $dbg->fetch(PDO::FETCH_ASSOC);
-extract($row_debug);
+$setting = new Setting($db);
+$doc = new Doc($db);
 
-if ($row_debug['value'] == 1) {
-    require '../vendor/autoload.php';        // If installed via composer
-    $debug = new \bdk\Debug(array(
-        'collect' => true,
-        'output' => true,
-    ));
+if (!empty($prefix)) {
+    $setting->prx = $prefix . '_';
+    $doc->prx = $prefix . '_';
 }
 
-require '../../vendor/autoload.php';
+if (is_file(__DIR__ . '/../../vendor/autoload.php')) {
+    require_once __DIR__ . '/../../vendor/autoload.php';
+} elseif (is_file(__DIR__ . '/../vendor/autoload.php')) {
+    require_once __DIR__ . '/../vendor/autoload.php';
+}
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
-// check the language set
-$setting->name = "lang";
-$stmt = $setting->showByName();
-$lang = $stmt['value'];
-$_SESSION['lang'] = $lang;
-
-
-foreach (glob("../locale/$lang/*.php") as $row) {
-    require "$row";
+// Debug check
+$setting->name = 'debug';
+$dbgStmt = $setting->showAllWhere('id', ['name']);
+$rowDebug = $dbgStmt->fetch(PDO::FETCH_ASSOC);
+if (($rowDebug['value'] ?? '0') === '1' && class_exists('\bdk\Debug')) {
+    new \bdk\Debug(['collect' => true, 'output' => true]);
 }
 
+// Locale loading
+$setting->name = 'lang';
+$stmtLang = $setting->showByName();
+$lang = is_array($stmtLang) && !empty($stmtLang['value']) ? (string) $stmtLang['value'] : 'it';
+$_SESSION['lang'] = $lang;
 
-$operation = filter_input(INPUT_POST, "operation");
+$localeFiles = glob(__DIR__ . "/../locale/{$lang}/*.php") ?: [];
+foreach ($localeFiles as $locFile) {
+    require_once $locFile;
+}
 
-if ($operation == "settings") {
+$operation = (string) filter_input(INPUT_POST, 'operation');
+
+if ($operation === 'settings') {
+    if (!isset($_SESSION['loggedin'])) {
+        header('Location: ../../login/auth-login.php?err=noLogin');
+        exit;
+    }
 
     $post = $_POST;
+    unset($post['operation']);
 
     $error = 0;
-    $doc->table = "doc_settings";
+    $doc->table = 'doc_settings';
 
     foreach ($post as $key => $value) {
-
-        $doc->name = $key;
-        $doc->value = $value;
+        $doc->name = (string) $key;
+        $doc->value = is_scalar($value) ? (string) $value : '';
         if (!$doc->updateValue()) {
             $error++;
         }
     }
 
-    if ($error == 0) {
-        header("Location: ../index.php?p=bookingSettings&msg=settingUpdate");
-        exit;
+    if ($error === 0) {
+        header('Location: ../index.php?p=bookingSettings&msg=settingUpdate');
     } else {
-        header("Location: ../index.php?p=bookingSettings&err=settingUpdateErr");
+        header('Location: ../index.php?p=bookingSettings&err=settingUpdateErr');
+    }
+    exit;
+}
+
+if ($operation === 'timetable') {
+    if (!isset($_SESSION['loggedin'])) {
+        header('Location: ../../login/auth-login.php?err=noLogin');
         exit;
     }
-} else if ($operation == "timetable") {
 
-    $doc->table = "doc_timetable";
-
+    $doc->table = 'doc_timetable';
     $error = 0;
 
-    for ($i = 1; $i < 6; $i++) {
-
+    for ($i = 1; $i <= 5; $i++) {
         $doc->weekday = $i;
-        $doc->start_time = $_POST["start_$i"];
-        $doc->end_time = $_POST["end_$i"];
-        isset($_POST["booking_$i"]) ? $doc->booking = 0 : $doc->booking = 1;
+        $doc->start_time = isset($_POST["start_{$i}"]) ? (string) $_POST["start_{$i}"] : '08:00';
+        $doc->end_time = isset($_POST["end_{$i}"]) ? (string) $_POST["end_{$i}"] : '12:00';
+        $doc->booking = isset($_POST["booking_{$i}"]) ? 0 : 1;
 
         if (!$doc->update(['start_time', 'end_time', 'booking'], 'weekday')) {
             $error++;
         }
     }
 
-    if ($error == 0) {
-        header("Location: ../index.php?p=bookingSettings&msg=timetableUpdate");
-        exit;
+    if ($error === 0) {
+        header('Location: ../index.php?p=bookingSettings&msg=timetableUpdate');
     } else {
-        header("Location: ../index.php?p=bookingSettings&err=timetableUpdateErr");
+        header('Location: ../index.php?p=bookingSettings&err=timetableUpdateErr');
+    }
+    exit;
+}
+
+if ($operation === 'msg') {
+    if (!isset($_SESSION['loggedin'])) {
+        header('Location: ../../login/auth-login.php?err=noLogin');
         exit;
     }
-} else if ($operation == "msg") {
 
-    $doc->table = "doc_messages";
+    $doc->table = 'doc_messages';
     $doc->id = 1;
-    $doc->msg = filter_input(INPUT_POST, 'msg');
-    $doc->start_time = filter_input(INPUT_POST, 'start');
-    $doc->end_time = filter_input(INPUT_POST, 'end');
+    $doc->msg = (string) (filter_input(INPUT_POST, 'msg') ?? '');
+    $doc->start_time = (string) (filter_input(INPUT_POST, 'start') ?? '');
+    $doc->end_time = (string) (filter_input(INPUT_POST, 'end') ?? '');
 
     if ($doc->update(['msg', 'start_time', 'end_time'], 'id')) {
-        header("Location: ../index.php?p=addMessage&msg=msgUpdate");
-        exit;
+        header('Location: ../index.php?p=addMessage&msg=msgUpdate');
     } else {
-        header("Location: ../index.php?p=addMessage&err=msgUpdateErr");
+        header('Location: ../index.php?p=addMessage&err=msgUpdateErr');
+    }
+    exit;
+}
+
+if ($operation === 'booking') {
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        header('Location: ../../index.php?err=errPost');
         exit;
     }
-} else if ($operation == 'booking') {
-    /*   if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['recaptcha_response'])) {
 
+    $recaptchaSecret = '6Lf5qX4tAAAAAHCtgQlg9TiOHHOeQItDMwZ0_Xuq';
+    $recaptchaResponse = (string) ($_POST['g-recaptcha-response'] ?? '');
 
-        $recaptcha_url = 'https://www.google.com/recaptcha/api/siteverify';
-        $recaptcha_secret = '6LetcWAtAAAAAH52Fj00DbbGbjFaxeI-_rkHYX9c';
-        $recaptcha_response = $_POST['recaptcha_response'];
+    if ($recaptchaResponse === '') {
+        header('Location: ../../index.php?err=errRecaptcha');
+        exit;
+    }
 
-        // Istanziare e decodificare la richiesta POST:      
+    $recaptchaUrl = 'https://www.google.com/recaptcha/api/siteverify';
+    $data = [
+        'secret'   => $recaptchaSecret,
+        'response' => $recaptchaResponse,
+        'remoteip' => $_SERVER['REMOTE_ADDR'] ?? null,
+    ];
 
-        $recaptcha = file_get_contents($recaptcha_url . '?secret=' . $recaptcha_secret . '&response=' . $recaptcha_response);
-        $recaptcha = json_decode($recaptcha);
+    $options = [
+        'http' => [
+            'header'  => "Content-type: application/x-www-form-urlencoded\r\n",
+            'method'  => 'POST',
+            'content' => http_build_query($data),
+            'timeout' => 10,
+        ],
+    ];
 
-        // Azioni da compiere basate sul punteggio ottenuto:      
+    $context = stream_context_create($options);
+    $result = @file_get_contents($recaptchaUrl, false, $context);
+    $recaptcha = $result ? json_decode($result, false) : null;
 
-        if ($recaptcha->score >= 0.5) { */
+    if (!$recaptcha || empty($recaptcha->success)) {
+        header('Location: ../../index.php?err=errRecaptcha');
+        exit;
+    }
 
-    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $doc->table = 'doc_bookings';
 
-        $recaptcha_secret = '6Lf5qX4tAAAAAHCtgQlg9TiOHHOeQItDMwZ0_Xuq';
-        $recaptcha_response = $_POST['g-recaptcha-response'] ?? '';
+    $date = (string) filter_input(INPUT_POST, 'date');
+    $time = (string) filter_input(INPUT_POST, 'time');
 
-        if (empty($recaptcha_response)) {
-            die('Verifica reCAPTCHA non completata.');
-        }
+    $dtObj = DateTime::createFromFormat('Y-m-d H:i', $date . ' ' . $time);
+    if (!$dtObj) {
+        header('Location: ../../booking.php?err=notBooked');
+        exit;
+    }
 
-        $recaptcha_url = 'https://www.google.com/recaptcha/api/siteverify';
+    $italianDate = $dtObj->format('d/m/Y');
+    $doc->slot_booked = $dtObj->format('Y-m-d H:i:s');
 
-        $data = [
-            'secret'   => $recaptcha_secret,
-            'response' => $recaptcha_response,
-            'remoteip' => $_SERVER['REMOTE_ADDR'] ?? null
-        ];
+    // Controllo doppie prenotazioni
+    if ($doc->itemExists('slot_booked')) {
+        header('Location: ../../booking.php?err=bookingExists');
+        exit;
+    }
 
-        $options = [
-            'http' => [
-                'header'  => "Content-type: application/x-www-form-urlencoded\r\n",
-                'method'  => 'POST',
-                'content' => http_build_query($data)
-            ]
-        ];
+    $patientName = trim((string) filter_input(INPUT_POST, 'name'));
+    $email = trim((string) filter_input(INPUT_POST, 'email'));
+    $phone = trim((string) filter_input(INPUT_POST, 'phone'));
+    $reasonId = (int) filter_input(INPUT_POST, 'reason_id');
+    $notes = trim((string) (filter_input(INPUT_POST, 'notes') ?? ''));
+    $token = bin2hex(random_bytes(16));
 
-        $context = stream_context_create($options);
+    $doc->name = $patientName;
+    $doc->email = $email;
+    $doc->phone = $phone;
+    $doc->reason_id = $reasonId;
+    $doc->notes = $notes;
+    $doc->token = $token;
 
-        $result = file_get_contents($recaptcha_url, false, $context);
-        $recaptcha = json_decode($result);
+    if ($doc->insert(['name', 'email', 'phone', 'reason_id', 'notes', 'slot_booked', 'token'])) {
+        // Recupero email mittente
+        $doc->table = 'doc_settings';
+        $doc->name = 'email';
+        $stmt = $doc->showAllWhere('id', ['name']);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        $from = !empty($row['value']) ? (string) $row['value'] : 'noreply@dmweblab.com';
 
-        if (!$recaptcha || empty($recaptcha->success)) {
-            die('Verifica reCAPTCHA fallita.');
-        }
-        if ($recaptcha->success) {
-            $doc->table = 'doc_bookings';
+        $subject = "Prenotazione visita - {$italianDate}";
 
-            // formatting datetime
-            $date = filter_input(INPUT_POST, 'date');
-            $italian_date = DateTime::createFromFormat('Y-m-d', $date)->format('d/m/Y');
-            $time = filter_input(INPUT_POST, 'time');
-            $dateTime = DateTime::createFromFormat('Y-m-d H:i', $date . ' ' . $time);
-            $doc->slot_booked = $dateTime->format('Y-m-d H:i:s');
+        $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+        $host = $_SERVER['HTTP_HOST'] ?? 'dottoressacrosetto.it';
+        $deleteUrl = "{$scheme}://{$host}/delete_booking.php?email=" . urlencode($email) . '&token=' . urlencode($token);
 
-            // checking for double bookings
-            if ($doc->itemExists('slot_booked')) {
-                header('Location: ../../booking.php?err=bookingExists');
-                exit;
+        $block1 = $doc_block1 ?? '<html><body><p>Buongiorno,</p><p>Si conferma la prenotazione della visita. Di seguito i dati:</p>';
+        $block2 = $doc_block2 ?? '<p>In caso non potesse più venire in visita, chiedo gentilmente di eliminare la prenotazione cliccando sul seguente link:</p>';
+        $block3 = $doc_block3 ?? '<p>Grazie,<br>Dottoressa Crosetto Maria Chiara</p></body></html>';
+
+        $output = $block1;
+        $output .= "<p>Paziente: <b>" . htmlspecialchars($patientName, ENT_QUOTES, 'UTF-8') . "</b><br>";
+        $output .= "Data della visita: <b>{$italianDate} - {$time}</b></p>";
+        $output .= $block2;
+        $output .= '<p><a href="' . htmlspecialchars($deleteUrl, ENT_QUOTES, 'UTF-8') . '" target="_blank">Cancella appuntamento</a></p>';
+        $output .= $block3;
+
+        try {
+            if (class_exists(PHPMailer::class)) {
+                $mail = new PHPMailer(true);
+                $mail->isSMTP();
+                $mail->Host = 'mail.dmweblab.com';
+                $mail->SMTPAuth = true;
+                $mail->Username = 'noreply@dmweblab.com';
+                $mail->Password = 'Salomon-86';
+                $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+                $mail->Port = 587;
+                $mail->CharSet = 'UTF-8';
+                $mail->setFrom($from, 'Prenotazioni - Dottoressa Crosetto');
+                $mail->addAddress($email, $patientName);
+                $mail->isHTML(true);
+                $mail->Subject = $subject;
+                $mail->Body = $output;
+                $mail->send();
             }
 
-            $patient_name = filter_input(INPUT_POST, 'name');
-            $email = filter_input(INPUT_POST, 'email');
-            $token =  bin2hex(random_bytes(16));
-            $doc->name = $patient_name;
-            $doc->email = $email;
-            $doc->phone = filter_input(INPUT_POST, 'phone');
-            $doc->reason_id = filter_input(INPUT_POST, 'reason_id');
-            $doc->notes = filter_input(INPUT_POST, 'notes');
-            $doc->token = $token;
-
-
-            if ($doc->insert(['name', 'email', 'phone', 'reason_id', 'notes', 'slot_booked', 'token'])) {
-
-                ///////////////////////////////////////////////////////////////
-                ////    INVIO EMAIL CON LINK PER MODIFICA O CANCELLAZIONE
-                ///////////////////////////////////////////////////////////////
-
-                $doc->table = "doc_settings";
-                $doc->name = "email";
-                $stmt = $doc->showAllWhere('id', ['name']);
-
-                $row = $stmt->fetch(PDO::FETCH_ASSOC);
-                extract($row);
-
-                $from = $row['value'];
-                $to = filter_input(INPUT_POST, 'email');
-
-                $subject = "Prenotazione visita - $italian_date";
-
-                $output = $doc_block1;
-                $output .= "<p>Paziente: <b>$patient_name</b><br>";
-                $output .= "Data della visita:<b> $italian_date - $time</b>";
-                $output .= $doc_block2;
-                $output .= '<p><a href="http://dottoressacrosetto.it/delete_booking.php?email=' . $email . '&token=' . $token . '" target="_blank">Cancella appuntamento</a></p>';
-                $output .= $doc_block3;
-
-
-                /*
-|--------------------------------------------------------------------------
-| Invio email con PHPMailer
-|--------------------------------------------------------------------------
-*/
-
-                try {
-
-                    $mail = new PHPMailer(true);
-
-                    // SMTP
-                    $mail->isSMTP();
-                    $mail->Host = 'mail.dmweblab.com';
-                    $mail->SMTPAuth = true;
-                    $mail->Username = 'noreply@dmweblab.com';
-                    $mail->Password = 'Salomon-86';
-                    $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-                    $mail->Port = 587;
-
-                    // Encoding
-                    $mail->CharSet = 'UTF-8';
-
-                    // Mittente
-                    $mail->setFrom($from, 'Prenotazioni - dottoressa Crosetto');
-
-                    // Destinatario
-                    $mail->addAddress($to, $patient_name);
-
-                    // Contenuto
-                    $mail->isHTML(true);
-                    $mail->Subject = $subject;
-                    $mail->Body = $output;
-
-                    // Invio
-                    $mail->send();
-
-                    header("Location: ../../index.php?msg=sentBookingMail");
-                    exit;
-                } catch (Exception $e) {
-
-                    error_log($mail->ErrorInfo);
-
-                    header("Location: ../../index.php?err=errSendBookingMail");
-                    exit;
-                }
-            } else {
-                header('Location: ../../booking.php?err=notBooked');
-                exit;
-            }
-        } else {
-            header("Location: ../../index.php?err=errRecaptcha");
+            header('Location: ../../index.php?msg=sentBookingMail');
+            exit;
+        } catch (\Throwable $e) {
+            error_log('PHPMailer Error: ' . $e->getMessage());
+            header('Location: ../../index.php?err=errSendBookingMail');
             exit;
         }
     } else {
-        header("Location: ../../index.php?msg=errPost");
-        exit;
-    }
-} else if ($operation == 'deleteEmail') {
-
-    $doc->table = 'doc_bookings';
-    $doc->email = filter_input(INPUT_POST, 'email');
-    $doc->token = filter_input(INPUT_POST, 'token');
-
-    $stmt = $doc->showAllWhere('id', ['email', 'token']);
-    $row = $stmt->fetch(PDO::FETCH_ASSOC);
-    extract($row);
-
-    $doc->table = 'doc_bookings';
-    $doc->id = $row['id'];
-    if ($doc->delete('id')) {
-        header("Location: ../../index.php?msg=bookingDeleteSucc");
-        exit;
-    } else {
-        header("Location: ../../index.php?err=bookingDeleteFail");
+        header('Location: ../../booking.php?err=notBooked');
         exit;
     }
 }
+
+if ($operation === 'deleteEmail') {
+    $doc->table = 'doc_bookings';
+    $email = (string) filter_input(INPUT_POST, 'email');
+    $token = (string) filter_input(INPUT_POST, 'token');
+
+    $doc->email = $email;
+    $doc->token = $token;
+
+    $stmt = $doc->showAllWhere('id', ['email', 'token']);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($row && !empty($row['id'])) {
+        $doc->id = (int) $row['id'];
+        if ($doc->delete('id')) {
+            header('Location: ../../index.php?msg=bookingDeleteSucc');
+        } else {
+            header('Location: ../../index.php?err=bookingDeleteFail');
+        }
+    } else {
+        header('Location: ../../index.php?err=bookingDeleteFail');
+    }
+    exit;
+}
+
+header('Location: ../../index.php');
+exit;

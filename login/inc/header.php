@@ -1,186 +1,165 @@
 <?php
 
-if (!is_file('../admin/class/Database.php')) {
-  require "../admin/inc/dbdata.php";
-  exit;
+declare(strict_types=1);
+
+##############    Damares    ###############
+#                                          #
+#    A backend project by DM WebLab        #
+#   Website: https://www.dmweblab.com      #
+#   GitHub: https://github.com/damares86   #
+#                                          #
+############################################
+
+if (!is_file(__DIR__ . '/../../admin/class/Database.php')) {
+    require_once __DIR__ . '/../../admin/inc/dbdata.php';
+    exit;
 }
 
-spl_autoload_register('autoloader');
+// Autoloader for classes
+spl_autoload_register(static function (string $class): void {
+    $file = __DIR__ . "/../../admin/class/{$class}.php";
+    if (is_file($file)) {
+        require_once $file;
+    }
+});
 
-function autoloader($class)
-{
-  include("../admin/class/$class.php");
+// Composer autoloader
+$vendorAutoload = __DIR__ . '/../../admin/vendor/autoload.php';
+if (is_file($vendorAutoload)) {
+    require_once $vendorAutoload;
+}
+
+$prefixFile = __DIR__ . '/../../admin/core/prefix.php';
+$prefix = '';
+if (is_file($prefixFile)) {
+    require_once $prefixFile;
 }
 
 $database = new Database();
 $db = $database->getConnection();
 
-// recall of all the classes
-$files = glob("../admin/class/*.php", GLOB_BRACE);
-rsort($files);
+// Instantiate core models
+$common = new Common($db);
+$account = new Account($db);
+$auth = new Auth($db);
+$role = new Role($db);
+$setting = new Setting($db);
+$section = new Section($db);
+$file = new File($db);
+$plugin = new Plugin($db);
+$home = new Home($db);
+$rolessection = new RolesSection($db);
+$accountroles = new AccountRoles($db);
 
-// creation of the file with all the initialization of the classes
-if (!is_file('../admin/inc/class_initialize.php')) {
-  $file_handle = fopen('inc/class_initialize.php', 'w');
-  fwrite($file_handle, '<?php');
-  fwrite($file_handle, "\n");
-  foreach ($files as $filename) {
-    $nomefile = pathinfo($filename);
-    $file = $nomefile['filename'];
-    $file_var = strtolower($file);
-    fwrite($file_handle, '$' . $file_var . ' = new ' . $file . '($db);');
-    fwrite($file_handle, "\n");
-  }
-  if ($prefix) {
-    fwrite($file_handle, '$common->prx = "' . $prefix . '_";');
-    fwrite($file_handle, "\n");
-  }
-  fwrite($file_handle, "?>");
-  chmod('../admin/inc/class_initialize.php', 0777);
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
 }
-require "../admin/inc/class_initialize.php";
 
-session_start();
-
-$setting->name = "role_redirect";
+$setting->name = 'role_redirect';
 $stmt = $setting->showAllWhere('id', ['name']);
-$row = $stmt->fetch(PDO::FETCH_ASSOC);
-$redir = $row['value'];
+$row = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : null;
+$redir = (string) ($row['value'] ?? '0');
 
 if (isset($_COOKIE['damares-login'])) {
-  $pieces = explode(",", $_COOKIE['damares-login']);
+    $pieces = explode(',', (string) $_COOKIE['damares-login']);
+    if (count($pieces) >= 2) {
+        $auth->id = (int) $pieces[0];
+        $auth->auth_token = $pieces[1];
 
-  $auth->id = $pieces[0];
-  $id = $pieces[0];
-  $auth->auth_token = $pieces[1];
-  if ($auth->checkCookie() > 0) {
+        if ($auth->checkCookie() > 0) {
+            $accountroles->account_id = $auth->id;
+            $account->id = $auth->id;
 
-    $accountroles->account_id = $id;
+            $stmtAcc = $account->showAllWhere('id', ['id']);
+            $rowAcc = $stmtAcc ? $stmtAcc->fetch(PDO::FETCH_ASSOC) : null;
 
-    $account->id = $id;
+            if ($rowAcc) {
+                $roleId = $accountroles->showAccountRolesId();
+                $role->id = $roleId;
 
-    $stmt = $account->showAllWhere('id', ['id']);
-    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+                $_SESSION['loggedin'] = true;
+                $_SESSION['account_id'] = $rowAcc['id'];
+                $_SESSION['internal'] = 1;
+                $_SESSION['role_id'] = $roleId;
+                $_SESSION['rolename'] = $role->showRolenameById() ?? '';
+                $_SESSION['username'] = $rowAcc['username'] ?? '';
+                $_SESSION['avatar'] = $rowAcc['avatar'] ?? 'default.png';
 
-    $role_id = $accountroles->showAccountRolesId();
-    $role->id = $role_id;
+                $auth->updateLog(date('Y-m-d H:i:s'));
 
-    // set session data
-    $_SESSION['loggedin'] = true;
-    $_SESSION['account_id'] = $row['id'];
-    $_SESSION['internal'] = 1;
-    $_SESSION['role_id'] = $role_id;
-    $_SESSION['rolename'] = $role->showRolenameById();
-    $_SESSION['username'] = $row['username'];
-    $_SESSION['avatar'] = $row['avatar'];
+                if ($redir === '1') {
+                    $stmtRole = $role->showAllWhere('id', ['id']);
+                    $rowRole = $stmtRole ? $stmtRole->fetch(PDO::FETCH_ASSOC) : null;
+                    if ($rowRole && !empty($rowRole['redirect']) && $rowRole['redirect'] !== 'none') {
+                        header('Location: ' . $rowRole['redirect']);
+                        exit;
+                    }
+                }
 
-    // update the login log time
-    $time = date("Y.m.d G:i:s");
-    $auth->updateLog($time);
-
-    $plugin->pluginname = "role_redirect";
-    if ($redir == 1) {
-      $stmt = $role->showAllWhere('id', ['id']);
-      $row = $stmt->fetch(PDO::FETCH_ASSOC);
-      extract($row);
-      if ($row['redirect'] != "none") {
-        header("Location: " . $row['redirect'] . "");
-        exit;
-      } else {
-        header("Location: ../admin/");
-        exit;
-      }
-    } else {
-      header("Location: ../admin/");
-      exit;
+                header('Location: ../admin/');
+                exit;
+            }
+        }
     }
-  }
-} else if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] == 1) {
-  if ($redir == 1) {
-    $stmt = $role->showAllWhere('id', ['id']);
-    $row = $stmt->fetch(PDO::FETCH_ASSOC);
-    extract($row);
-    if ($row['redirect'] != "none") {
-      header("Location: " . $row['redirect'] . "");
-      exit;
-    } else {
-      header("Location: ../admin/");
-      exit;
+} elseif (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
+    if ($redir === '1' && isset($_SESSION['role_id'])) {
+        $role->id = (int) $_SESSION['role_id'];
+        $stmtRole = $role->showAllWhere('id', ['id']);
+        $rowRole = $stmtRole ? $stmtRole->fetch(PDO::FETCH_ASSOC) : null;
+        if ($rowRole && !empty($rowRole['redirect']) && $rowRole['redirect'] !== 'none') {
+            header('Location: ' . $rowRole['redirect']);
+            exit;
+        }
     }
-  } else {
-    header("Location: ../admin/");
+    header('Location: ../admin/');
     exit;
-  }
 }
 
-// check if the debug mode is active
-$setting->name = "debug";
+// Check debug mode
+$setting->name = 'debug';
 $dbg = $setting->showAllWhere('id', ['name']);
-$row_debug = $dbg->fetch(PDO::FETCH_ASSOC);
-extract($row_debug);
+$row_debug = $dbg ? $dbg->fetch(PDO::FETCH_ASSOC) : null;
 
-if ($row_debug['value'] == 1) {
-    require '../admin/vendor/autoload.php';        // If installed via composer
-    $debug = new \bdk\Debug(array(
-        'collect' => true,
-        'output' => true,
-    ));
+if ($row_debug && (string) ($row_debug['value'] ?? '0') === '1') {
+    if (class_exists(\bdk\Debug::class)) {
+        $debug = new \bdk\Debug([
+            'collect' => true,
+            'output' => true,
+        ]);
+    }
 }
 
-
-$setting->name = "lang";
+// Language setting
+$setting->name = 'lang';
 $stmt = $setting->showByName();
-$lang = $stmt['value'];
+$lang = is_array($stmt) && !empty($stmt['value']) ? (string) $stmt['value'] : 'en';
+$_SESSION['lang'] = $lang;
 
-foreach (glob("../admin/locale/$lang/*.php") as $row) {
-  require "$row";
+$localeFiles = glob(__DIR__ . "/../../admin/locale/{$lang}/*.php") ?: [];
+foreach ($localeFiles as $lFile) {
+    require_once $lFile;
 }
 
-
-$plugin->pluginname = "account_register";
-$reg = "";
-
-$op = "";
-
-if (filter_input(INPUT_GET, "op")) {
-  $op = filter_input(INPUT_GET, "op");
+$plugin->pluginname = 'account_register';
+$reg = false;
+if ($plugin->itemExists('pluginname') && (int) $plugin->isActive() === 1) {
+    $reg = true;
 }
 
-if ($plugin->itemExists('pluginname') && $plugin->isActive() == 1) {
-  $reg = true;
-}
-
+$op = (string) (filter_input(INPUT_GET, 'op', FILTER_DEFAULT) ?? '');
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title><?= $login_titlebar ?> - damares</title>
+  <title><?= htmlspecialchars((string) ($login_titlebar ?? 'Login'), ENT_QUOTES, 'UTF-8') ?> - damares</title>
   <link rel="stylesheet" href="../admin/assets/css/main/app.css" />
   <link rel="stylesheet" href="../admin/assets/css/pages/auth.css" />
   <link rel="stylesheet" href="../admin/assets/css/custom.css">
-  <link
-    rel="shortcut icon"
-    href="../admin/assets/images/logo/favicon.ico"
-    type="image/x-icon" />
-  <link
-    rel="shortcut icon"
-    href="../admin/assets/images/logo/favicon.ico"
-    type="image/png" />
-
-  <!--
-    ##############    Damares    ###############
-    #                                          #
-    #    A backend project by DM WebLab        #
-    #   Website: https://www.dmweblab.com      #
-    #   GitHub: https://github.com/damares86   #
-    #                                          #
-    ############################################
-    -->
-
+  <link rel="shortcut icon" href="../admin/assets/images/logo/favicon.ico" type="image/x-icon" />
+  <link rel="shortcut icon" href="../admin/assets/images/logo/favicon.ico" type="image/png" />
 </head>
 
 <body>
@@ -193,7 +172,5 @@ if ($plugin->itemExists('pluginname') && $plugin->isActive() == 1) {
           </div>
 
           <?php
-
-          // require of all alert files
-          require "inc/alert.php";
+          require_once __DIR__ . '/alert.php';
           ?>

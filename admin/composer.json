@@ -1,12 +1,22 @@
 {
+    "name": "damares/damares",
+    "description": "Damares - PHP Backend and CMS Admin Panel",
+    "type": "project",
+    "license": "MIT",
     "require": {
-        "bdk/debug": "3.0",
+        "php": "^8.1 || ^8.2 || ^8.3 || ^8.4",
+        "bdk/debug": "^3.0",
         "pelago/emogrifier": "^7.0.1",
         "phpmailer/phpmailer": "^6.10"
     },
-  "config": {
-    "platform": {
-      "php": "7.4.33"
+    "autoload": {
+        "classmap": [
+            "class/"
+        ]
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "sort-packages": true,
+        "allow-plugins": {}
     }
-  }
 }

@@ -1,5 +1,6 @@
 <?php
 
+declare(strict_types=1);
 
 ##############    Damares    ###############
 #                                          #
@@ -9,195 +10,149 @@
 #                                          #
 ############################################
 
-
-require '../vendor/autoload.php';		// If installed via composer
-$debug = new \bdk\Debug(array(
-	'collect' => true,
-	'output' => true,
-));
-
-spl_autoload_register('autoloader');
-
-function autoloader($class){
-	include("../class/$class.php");
+$vendorAutoload = __DIR__ . '/../vendor/autoload.php';
+if (is_file($vendorAutoload)) {
+    require_once $vendorAutoload;
 }
+
+spl_autoload_register(static function (string $class): void {
+    $file = __DIR__ . "/../class/{$class}.php";
+    if (is_file($file)) {
+        require_once $file;
+    }
+});
 
 $database = new Database();
 $db = $database->getConnection();
 
-include "../inc/class_initialize.php";
+$common = new Common($db);
+$account = new Account($db);
+$auth = new Auth($db);
+$role = new Role($db);
+$setting = new Setting($db);
+$verify = new Common($db);
+$verify->table = 'verify';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['recaptcha_response'])) {
-	$stmt=$verify->showAll('id');
-	$row=$stmt->fetch(PDO::FETCH_ASSOC);
-	$secret=$row['secret'];
-	// Costruire il POST request:      
-	
-	$recaptcha_url = 'https://www.google.com/recaptcha/api/siteverify';
-	$recaptcha_secret = $secret;
-	$recaptcha_response = $_POST['recaptcha_response'];
-	
-	// Istanziare e decodificare la richiesta POST:      
-	
-	$recaptcha = file_get_contents($recaptcha_url . '?secret=' . $recaptcha_secret . '&response=' . $recaptcha_response);
-	$recaptcha = json_decode($recaptcha);
-	
-	// Azioni da compiere basate sul punteggio ottenuto:      
-	
-	if ($recaptcha->score >= 0.5) {
+    $stmt = $verify->showAll('id');
+    $row = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : null;
+    $secret = (string) ($row['secret'] ?? '');
 
-		$email=$_POST['email'];
+    $recaptcha_url = 'https://www.google.com/recaptcha/api/siteverify';
+    $recaptcha_response = (string) ($_POST['recaptcha_response'] ?? '');
 
-		$setting->name="lang" ;
-		$stmt = $setting->showByName();
-		$lang = $stmt['value'];
+    $response = @file_get_contents($recaptcha_url . '?secret=' . urlencode($secret) . '&response=' . urlencode($recaptcha_response));
+    $recaptcha = $response ? json_decode($response) : null;
 
-		foreach (glob("../locale/$lang/*.php") as $row){
-			require "$row";
-		}
+    if ($recaptcha && isset($recaptcha->score) && $recaptcha->score >= 0.5) {
+        $email = (string) (filter_input(INPUT_POST, 'email', FILTER_SANITIZE_EMAIL) ?? '');
 
-		$resetForm = filter_input(INPUT_POST, "resetForm");
-		$resetMail = filter_input(INPUT_POST, "resetMail");
+        $setting->name = 'lang';
+        $stmt = $setting->showByName();
+        $lang = is_array($stmt) && !empty($stmt['value']) ? (string) $stmt['value'] : 'en';
 
-		if($resetForm){
-			
-			$auth->email=$email;
-			$email_exists=$auth->emailExists();	
-			
-			if(!$email_exists){
-				header("Location: ../../login/auth-forgot-password.php?err=mailNotReg");
-				exit;
-			}
-			$account->email = $email ;
-			$account->table = 'password_reset_temp';
+        $localeFiles = glob(__DIR__ . "/../locale/{$lang}/*.php") ?: [];
+        foreach ($localeFiles as $lFile) {
+            require_once $lFile;
+        }
 
-			$pswTmp = $account->getPswTmpDataByEmail();
+        $resetForm = filter_input(INPUT_POST, 'resetForm', FILTER_DEFAULT);
+        $resetMail = filter_input(INPUT_POST, 'resetMail', FILTER_DEFAULT);
 
+        if ($resetForm) {
+            $auth->email = $email;
+            $email_exists = $auth->emailExists();
 
-				$curDate=date("Y-m-d H:i:s");
-				$expDate=$pswTmp['expDate'];
-				
-				if((!$pswTmp['email']||(($pswTmp['email']) && ($expDate<$curDate)))){
-					$stmt=$account->delete('email');
-					if(!$stmt){
-						header("Location: ../../login.php?err=noResetDelete");
-						exit;
-					}else {
-						$expFormat = mktime(date("H")+2, date("i"), date("s"), date("m") ,date("d"), date("Y"));
-						$expDate = date("Y-m-d H:i:s",$expFormat);
-						
-						$token = md5($email);
-						$addToken= substr(md5(uniqid(rand(),1)),3,10);
-						$token = $token . $addToken;
-						$account->token=$token;
-						$account->expDate = $expDate ;
-						$account->table = 'password_reset_temp' ;
+            if (!$email_exists) {
+                header('Location: ../../login/auth-forgot-password.php?err=mailNotReg');
+                exit;
+            }
 
-					if($account->insert(['email','token','expDate'])){
+            $account->email = $email;
+            $account->table = 'password_reset_temp';
+            $pswTmp = $account->getPswTmpDataByEmail();
 
-						$url = $_SERVER['SERVER_NAME'];
+            $curDate = date('Y-m-d H:i:s');
+            $expDate = $pswTmp['expDate'] ?? '';
 
-						$setting->name="noreply";
-						$stmt=$setting->showAllWhere('id',['name']);
-						$row=$stmt->fetch(PDO::FETCH_ASSOC);
-						$from=$row['value'];
+            if (!$pswTmp || empty($pswTmp['email']) || ($expDate < $curDate)) {
+                $account->delete('email');
 
-						$setting->name="noreply" ;
-						$stmt = $setting->showByName();
-						$noreply = $stmt['value'];
+                $expDateNew = date('Y-m-d H:i:s', time() + 7200);
+                $token = bin2hex(random_bytes(32));
 
-						$from = $noreply ;
+                $account->token = $token;
+                $account->expDate = $expDateNew;
+                $account->table = 'password_reset_temp';
 
-						// To send HTML mail, the Content-type header must be set
-						$headers  = 'MIME-Version: 1.0' . "\r\n";
-						$headers .= 'Content-type: text/html; charset=iso-8859-1' . "\r\n";
-						// Create email headers
-						$headers .= 'From: '.$from."\r\n".
-						'Reply-To: '.$from."\r\n" .
-						'X-Mailer: PHP/' . phpversion();
+                if ($account->insert(['email', 'token', 'expDate'])) {
+                    $url = $_SERVER['SERVER_NAME'] ?? 'localhost';
+                    $setting->name = 'noreply';
+                    $stmt = $setting->showByName();
+                    $from = is_array($stmt) && !empty($stmt['value']) ? (string) $stmt['value'] : 'noreply@example.com';
 
-						$output=$block1;
-						$output.='<p><a href="http://'.$url.'/login/auth-forgot-password.php?email='.$email.'&token='.$token.'&op=reset" target="_blank">http://'.$url.'/login/auth-forgot-password.php?email='.$email.'&token='.$token.'&op=reset</a></p>';		
-						$output.=$block2;
+                    $headers = "MIME-Version: 1.0\r\n";
+                    $headers .= "Content-type: text/html; charset=utf-8\r\n";
+                    $headers .= "From: {$from}\r\n";
+                    $headers .= "Reply-To: {$from}\r\n";
+                    $headers .= 'X-Mailer: PHP/' . phpversion();
 
-						$to= $email; 
-						$subject="Reset password Damares";
+                    $resetUrl = "http://{$url}/login/auth-forgot-password.php?email=" . urlencode($email) . "&token={$token}&op=reset";
+                    $output = ($block1 ?? '') . "<p><a href=\"{$resetUrl}\" target=\"_blank\">{$resetUrl}</a></p>" . ($block2 ?? '');
 
-						
-						if (mail ($to, $subject, $output, $headers)) {
-							header("Location: ../../login/auth-login.php?msg=sentMail");
-							exit;
-						} else {
-							header("Location: ../../login/auth-login.php?err=errSendMail");
-							exit;
-						}
-					
-					}else{	
-						header("Location: ../../login/auth-login.php?err=noReset");
-						exit;
-					}
-				}
-				} else{
-					header("Location: ../../login/auth-login.php?err=errResetRequest");
-					exit;
-				}
-			}else if($resetMail) {
+                    $subject = 'Reset password Damares';
 
-				$email=filter_input(INPUT_POST, "email");
-				$account->email=$email;
-				$stmt = $account->showAllWhere('id',['email']);
-				$row=$stmt->fetch(PDO::FETCH_ASSOC);
-				
-				if(!$_POST['password']){
-					header("Location: ../../login.php?msg=pswEmpty");
-					exit;
-				}
-				
-				$password = $_POST['password'];
-				$password_hash = password_hash($password, PASSWORD_BCRYPT);
-				$account->password = $password_hash;
-				$account->id = $row['id'] ;
-				$account->table = 'password_reset_temp' ;
+                    if (@mail($email, $subject, $output, $headers)) {
+                        header('Location: ../../login/auth-login.php?msg=sentMail');
+                        exit;
+                    }
 
-			
-				if($account->update(['password'],'id')){
-					if($account->delete('email')){
-						header("Location: ../../login/auth-login.php?msg=newPass");
-						exit;
-					}else{
-						header("Location: ../../login/auth-login.php?err=keyDelErr");
-						exit;
-					}
-										
-				}else{
-					header("Location: ../../login/auth-login.php?err=pswEditErr");
-					exit;
-				}
-			}else{
-		header("Location: ../../login/auth-login.php?err=errPost");
-		exit;
-		}
-		exit;
+                    header('Location: ../../login/auth-login.php?err=errSendMail');
+                    exit;
+                }
 
-  
-}else{
-	header("Location: ../../login/auth-login.php?err=errRecaptcha");
-	exit;
+                header('Location: ../../login/auth-login.php?err=noReset');
+                exit;
+            }
+
+            header('Location: ../../login/auth-login.php?err=errResetRequest');
+            exit;
+        }
+
+        if ($resetMail) {
+            $account->email = $email;
+            $stmt = $account->showAllWhere('id', ['email']);
+            $row = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : null;
+
+            $password = (string) ($_POST['password'] ?? '');
+            if (empty($password) || !$row) {
+                header('Location: ../../login/auth-forgot-password.php?msg=pswEmpty');
+                exit;
+            }
+
+            $password_hash = password_hash($password, PASSWORD_DEFAULT);
+            $account->password = $password_hash;
+            $account->id = (int) $row['id'];
+            $account->table = 'accounts';
+
+            if ($account->update(['password'], 'id')) {
+                $account->table = 'password_reset_temp';
+                $account->delete('email');
+                header('Location: ../../login/auth-login.php?msg=newPass');
+                exit;
+            }
+
+            header('Location: ../../login/auth-login.php?err=pswEditErr');
+            exit;
+        }
+
+        header('Location: ../../login/auth-login.php?err=errPost');
+        exit;
+    }
+
+    header('Location: ../../login/auth-login.php?err=errRecaptcha');
+    exit;
 }
 
-}else{
-header("Location: ../../login/auth-login.php?msg=errPost");
+header('Location: ../../login/auth-login.php?msg=errPost');
 exit;
-}
-?>
-
-
-
-
-
-
-
-
-
-
-

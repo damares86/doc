@@ -1,4 +1,6 @@
-<?php 
+<?php
+
+declare(strict_types=1);
 
 ##############    Damares    ###############
 #                                          #
@@ -8,21 +10,15 @@
 #                                          #
 ############################################
 
-class Register extends Common{
-
-    public $table = "register_account_temp";
-    public $email ;
-    public $username ;
-    public $password ;
-    public $token ;
-    public $avatar ;
-    public $expDate ;
-    public $details ;
-    public $details_opt ;
-
-  
-    
-
+class Register extends Common
+{
+    public string $table = 'register_account_temp';
+    public ?string $email = null;
+    public ?string $username = null;
+    public ?string $password = null;
+    public ?string $token = null;
+    public ?string $avatar = 'default.png';
+    public ?string $expDate = null;
+    public ?string $details = null;
+    public ?string $details_opt = null;
 }
-
-?>

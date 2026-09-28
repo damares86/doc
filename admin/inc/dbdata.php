@@ -1,12 +1,8 @@
 <?php
-// require 'vendor/autoload.php';		// If installed via composer
-// $debug = new \bdk\Debug(array(
-// 	'collect' => true,
-// 	'output' => true,
-// ));
+
+declare(strict_types=1);
 
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -29,7 +25,7 @@
       type="image/png"
     />
 
-    <link rel="stylesheet" href=../admin/assets/css/shared/iconly.css" />
+    <link rel="stylesheet" href="../admin/assets/css/shared/iconly.css" />
 
     <!--
     ##############    Damares    ###############
@@ -49,18 +45,16 @@
         <div class="col-lg-7 col-12">
           <div id="auth-left">
             <div class="auth-logo">
-                <img src="../admin/assets/images/logo/damares_logo.png" alt="Logo"
-              />
+                <img src="../admin/assets/images/logo/damares_logo.png" alt="Logo" />
             </div>
             <h1 class="auth-title">Insert your database data</h1>
-            <form class="form form-horizontal" action="../admin/core/configdb.php" method="POST"  data-parsley-validate>
+            <form class="form form-horizontal" action="../admin/core/configdb.php" method="POST" data-parsley-validate>
                 <div class="form-body">
                   <div class="row">
                     <div class="col-md-4">
-                      <label>Server host (es. localhost) <span class="text-danger font-weight-bold">*</span></label>
+                      <label>Server host (e.g. localhost) <span class="text-danger font-weight-bold">*</span></label>
                     </div>
                     <div class="col-md-8 form-group">
-
                       <div class="form-check mandatory">
                         <input
                           type="text"
@@ -77,7 +71,6 @@
                       <label>Database name <span class="text-danger font-weight-bold">*</span></label>
                     </div>
                     <div class="col-md-8 form-group">
-
                       <div class="form-check mandatory">
                         <input
                           type="text"
@@ -94,7 +87,6 @@
                       <label>Database user <span class="text-danger font-weight-bold">*</span></label>
                     </div>
                     <div class="col-md-8 form-group">
-
                       <div class="form-check mandatory">
                         <input
                           type="text"
@@ -111,7 +103,6 @@
                       <label>Database password <span class="text-danger font-weight-bold">*</span></label>
                     </div>
                     <div class="col-md-8 form-group">
-
                       <div class="form-check mandatory">
                         <input
                           type="password"
@@ -119,17 +110,15 @@
                           class="form-control"
                           name="db_password"
                           placeholder="Database password"
-                          data-parsley-required="true"
                         />
                       </div>
                     </div>
 
                     <div class="col-md-4">
-                      <label>Table prefix (if you have more website)</label>
+                      <label>Table prefix (if you have multiple websites)</label>
                     </div>
                     <div class="col-md-8 form-group">
                       <div class="form-check mandatory">
-
                         <input
                           type="text"
                           id="prefix"
@@ -145,9 +134,8 @@
                     </div>
                     <div class="col-md-8 form-group">
                       <div class="form-check mandatory">
-
                         <input
-                          type="text"
+                          type="email"
                           id="email"
                           class="form-control"
                           name="email"
@@ -161,7 +149,6 @@
                       <label>Your admin password <span class="text-danger font-weight-bold">*</span></label>
                     </div>
                     <div class="col-md-8 form-group">
-
                       <div class="form-check mandatory">
                         <input
                           type="password"
@@ -189,17 +176,15 @@
         </div>
         <div class="col-lg-5 d-none d-lg-block">
           <div id="auth-right">
-              <img src="../login/img/visual.jpg">
+              <img src="../login/img/visual.jpg" alt="Visual">
           </div>
         </div>
       </div>
     </div>
     <script src="assets/js/bootstrap.js"></script>
     <script src="assets/js/app.js"></script>
-
     <script src="assets/extensions/jquery/jquery.min.js"></script>
     <script src="assets/extensions/parsleyjs/parsley.min.js"></script>
     <script src="assets/js/pages/parsley.js"></script>
   </body>
 </html>
-

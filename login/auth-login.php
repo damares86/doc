@@ -1,32 +1,30 @@
 <?php
 
-require "inc/header.php";
-$plugin->pluginname = "recaptcha";
-$mng = "mngAuth";
-$recap = false ;
+declare(strict_types=1);
 
-if ($plugin->itemExists('pluginname') && $plugin->isActive() == 1) {
-  $mng = "mngAuthRecap";
-  $recap = true ;
-  require "../admin/inc/recaptcha.php";
+require_once __DIR__ . '/inc/header.php';
+
+$plugin->pluginname = 'recaptcha';
+$mng = 'mngAuth';
+$recap = false;
+
+if ($plugin->itemExists('pluginname') && (int) $plugin->isActive() === 1) {
+    $mng = 'mngAuthRecap';
+    $recap = true;
+    require_once __DIR__ . '/../admin/inc/recaptcha.php';
 }
-
 ?>
 
-<h1 class="auth-title"><?= $login_title ?></h1>
+<h1 class="auth-title"><?= htmlspecialchars((string) ($login_title ?? 'Log in.'), ENT_QUOTES, 'UTF-8') ?></h1>
 
 <p class="auth-subtitle mb-5">
-  <?= $login_desc ?>
+  <?= htmlspecialchars((string) ($login_desc ?? 'Log in with your data that you entered during registration.'), ENT_QUOTES, 'UTF-8') ?>
 </p>
 
-<form action="../admin/core/<?= $mng ?>.php" method="POST" data-parsley-validate>
-  <?php
-  if($recap){
-  ?>
-  <input type="hidden" name="recaptcha_response" id="recaptchaResponse">
-  <?php
-  }
-  ?>
+<form action="../admin/core/<?= htmlspecialchars($mng, ENT_QUOTES, 'UTF-8') ?>.php" method="POST" data-parsley-validate>
+  <?php if ($recap): ?>
+    <input type="hidden" name="recaptcha_response" id="recaptchaResponse">
+  <?php endif; ?>
 
   <div class="form-group position-relative has-icon-left mb-4">
     <input type="email" class="form-control form-control-xl" placeholder="Email" name="email" data-parsley-required="true" />
@@ -46,42 +44,37 @@ if ($plugin->itemExists('pluginname') && $plugin->isActive() == 1) {
   <div class="form-check form-check-lg d-flex align-items-end">
     <input class="form-check-input remember me-2" type="checkbox" value="remember_me" name="remember" id="flexCheckDefault" />
     <label class="form-check-label text-gray-600" for="flexCheckDefault">
-      <?= $login_remember ?>
+      <?= htmlspecialchars((string) ($login_remember ?? 'Keep me logged in'), ENT_QUOTES, 'UTF-8') ?>
     </label>
   </div>
   <button class="btn btn-primary btn-block btn-lg shadow-lg mt-5">
-    <?= $login_button ?>
+    <?= htmlspecialchars((string) ($login_button ?? 'Log in'), ENT_QUOTES, 'UTF-8') ?>
   </button>
 </form>
+
 <div class="text-center mt-3 text-lg fs-4">
-  <?php
-  if ($reg) {
-  ?>
-    <?= $login_reg ?>
-    <a class="font-bold">
-      <a href="auth-register.php" class="font-bold"><?= $login_signup ?></a>.
-      </p>
-    <?php
-  }
-    ?>
+  <?php if ($reg): ?>
     <p>
-      <a class="font-bold" href="auth-forgot-password.php"><?= $login_forgot ?></a>
+      <?= htmlspecialchars((string) ($login_reg ?? "Don't have an account?"), ENT_QUOTES, 'UTF-8') ?>
+      <a href="auth-register.php" class="font-bold"><?= htmlspecialchars((string) ($login_signup ?? 'Sign up'), ENT_QUOTES, 'UTF-8') ?></a>.
     </p>
+  <?php endif; ?>
+  <p>
+    <a class="font-bold" href="auth-forgot-password.php"><?= htmlspecialchars((string) ($login_forgot ?? 'Forgot password?'), ENT_QUOTES, 'UTF-8') ?></a>
+  </p>
 </div>
 </div>
 </div>
 <div class="col-lg-7 d-none d-lg-block">
   <div id="auth-right">
     &nbsp;
-    <!-- <img src="img/visual.jpg" class="h-100"> -->
   </div>
 </div>
 
 </div>
 </div>
 <?php
-require "inc/footer.php";
+require_once __DIR__ . '/inc/footer.php';
 ?>
 </body>
-
 </html>

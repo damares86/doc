@@ -1,98 +1,59 @@
 <?php
-require 'inc/header.php';
-require 'inc/sidebar.php';
+
+declare(strict_types=1);
+
+require_once __DIR__ . '/inc/header.php';
+require_once __DIR__ . '/inc/sidebar.php';
 
 $page_name = 'booking';
 
-$date = $_GET['date'] ?? date('d-m-Y');
-
-$weekday = date('N', strtotime($date));
-
-if ($weekday >= 6) {
-  $date = date('Y-m-d', strtotime('next monday', strtotime($date)));
+$date = (string) ($_GET['date'] ?? date('Y-m-d'));
+if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+    $date = date('Y-m-d');
 }
 
-$today = date('d-m-Y');
-// massimo 10 giorni avanti
-$maxDate = date('d-m-Y', strtotime('+10 days'));
+$weekday = (int) date('N', (int) strtotime($date));
+if ($weekday >= 6) {
+    $date = date('Y-m-d', (int) strtotime('next monday', (int) strtotime($date)));
+}
 
-// gestione frecce
-$canGoBack = ($date > $today);
-$canGoForward = ($date < $maxDate);
+$today = date('Y-m-d');
+$maxDate = date('Y-m-d', (int) strtotime('+10 days'));
 
-$prev = date('Y-m-d', strtotime('-1 day', strtotime($date)));
-$next = date('Y-m-d', strtotime('+1 day', strtotime($date)));
-
-// giorno della settimana
-$weekday = date('N', strtotime($date));
+$weekday = (int) date('N', (int) strtotime($date));
 $doc->weekday = $weekday;
 $doc->table = 'doc_timetable';
 $stmt = $doc->showAllWhere('id', ['weekday']);
-$row = $stmt->fetch(PDO::FETCH_ASSOC);
-extract($row);
+$row = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : null;
 
-$free = ($row['booking'] == 0);
+$free = false;
+if ($row) {
+    $free = ((int) ($row['booking'] ?? 1) === 0);
+}
 
-$start_time = date('H:i', strtotime($row['start_time']));
-$end_time = date('H:i', strtotime($row['end_time']));
-$slots = $doc->generateSlots($start_time, $end_time);
-echo "ciao";
-
+$doc->table = 'doc_reason';
+$stmtReasons = $doc->showAll('id');
+$reasons = $stmtReasons ? $stmtReasons->fetchAll(PDO::FETCH_ASSOC) : [];
 ?>
 
-<!-- <script src="https://www.google.com/recaptcha/api.js?render=6LetcWAtAAAAAFEFd9BGjolsSFagETtkK_TXhR7y"> </script>
-
-<script>
-  grecaptcha.ready(function() {
-    grecaptcha.execute('6LetcWAtAAAAAFEFd9BGjolsSFagETtkK_TXhR7y', {
-      action: 'submit'
-    }).then(function(token) {
-      var recaptchaResponse = document.getElementById('recaptchaResponse');
-      recaptchaResponse.value = token;
-    });
-  });
-</script> -->
 <script src="https://www.google.com/recaptcha/api.js" async defer></script>
 
 <div class="page-content-wrapper">
-
   <div>
-
-    <!--     <div class="tiny-slider-one-wrapper" dir="ltr">
-      <div class="tiny-slider-one">
-        <div>
-          <div class="single-hero-slide bg-overlay" style="background-image: url('assets/img/bg_visual.png'); background-position:center center">
-            <div class="h-100 d-flex align-items-center text-center">
-              <div class="container">
-                <h3 class="text-white mb-1">Dottoressa Crosetto Maria Chiara </h3>
-                <p class="text-white">Giaveno (TO)</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div> -->
     <div class="pt-3"></div>
 
     <div class="container py-3">
-
       <!-- Navigazione giorni -->
       <div class="d-flex justify-content-between align-items-center mb-3">
-
-        <button type="button"
-          class="btn btn-outline-primary"
-          id="prevDay">
+        <button type="button" class="btn btn-outline-primary" id="prevDay">
           ←
         </button>
 
         <h5 class="mb-0" id="currentDate"></h5>
 
-        <button type="button"
-          class="btn btn-outline-primary"
-          id="nextDay">
+        <button type="button" class="btn btn-outline-primary" id="nextDay">
           →
         </button>
-
       </div>
 
       <!-- Lista slot -->
@@ -101,23 +62,18 @@ echo "ciao";
       <div class="pb-3"></div>
     </div>
 
-
     <script src="assets/js/booking.js"></script>
-
 
     <div class="modal fade" id="bookingModal" tabindex="-1" aria-hidden="true">
       <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-
           <form action="admin/core/mngBooking.php" method="post" id="contactForm">
-
             <div class="modal-header">
               <h5 class="modal-title">Prenota appuntamento</h5>
               <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Chiudi"></button>
             </div>
 
             <div class="modal-body">
-
               <p class="mb-3">
                 <strong id="bookingDateLabel"></strong>
               </p>
@@ -144,28 +100,22 @@ echo "ciao";
                 <label class="form-label">Telefono <span class="text-danger">*</span></label>
                 <input type="text" name="phone" class="form-control" required>
               </div>
+
               <!-- Motivazione -->
               <div class="mb-3">
                 <label class="form-label">Motivo della visita <span class="text-danger">*</span></label>
-                <select class="form-select form-control-clicked" id="defaultSelect" name="reason_id" aria-label="Default select example" required>
+                <select class="form-select form-control-clicked" id="defaultSelect" name="reason_id" required>
                   <option value="" selected disabled>---</option>
-                  <?php
-                  $doc->table = "doc_reason";
-                  $stmt = $doc->showAll('id');
-                  while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-                    extract($row);
-                  ?>
-                    <option value="<?= $row['id'] ?>"><?= $row['name'] ?></option>
-                  <?php
-                  }
-                  ?>
+                  <?php foreach ($reasons as $reason): ?>
+                    <option value="<?= (int) $reason['id'] ?>"><?= htmlspecialchars((string) $reason['name'], ENT_QUOTES, 'UTF-8') ?></option>
+                  <?php endforeach; ?>
                 </select>
               </div>
 
               <!-- Note -->
               <div class="mb-3">
                 <label class="form-label">Eventuali note</label>
-                <textarea name="notes" id="notes" class="form-control" rows="3 maxlength=" 140"></textarea>
+                <textarea name="notes" id="notes" class="form-control" rows="3" maxlength="140"></textarea>
                 <small id="notesCounter" class="text-muted">
                   0 / 140 caratteri
                 </small>
@@ -174,53 +124,53 @@ echo "ciao";
               <script>
                 const textarea = document.getElementById('notes');
                 const counter = document.getElementById('notesCounter');
-                const maxLength = textarea.maxLength;
-
-                textarea.addEventListener('input', function() {
-                  counter.textContent =
-                    `${this.value.length} / ${maxLength} caratteri`;
-                });
+                if (textarea && counter) {
+                  const maxLength = textarea.maxLength;
+                  textarea.addEventListener('input', function() {
+                    counter.textContent = `${this.value.length} / ${maxLength} caratteri`;
+                  });
+                }
               </script>
             </div>
 
-            <!-- <input type="hidden" name="recaptcha_response" id="recaptchaResponse"> -->
-            <div class="g-recaptcha" data-sitekey="6Lf5qX4tAAAAADpd_njyg0LyvcmbvqPFP0TCotiq"></div>
-            <div id="recaptchaError" style="display:none; color:#c00; margin-top:8px;">
-              Per inviare il modulo, completa la verifica "Non sono un robot".
+            <div class="px-3">
+              <div class="g-recaptcha" data-sitekey="6Lf5qX4tAAAAADpd_njyg0LyvcmbvqPFP0TCotiq"></div>
+              <div id="recaptchaError" style="display:none; color:#c00; margin-top:8px;">
+                Per inviare il modulo, completa la verifica "Non sono un robot".
+              </div>
             </div>
+
             <div class="modal-footer">
-              <button type="button"
-                class="btn btn-secondary"
-                data-bs-dismiss="modal">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                 Annulla
               </button>
-
               <button type="submit" class="btn btn-primary">
                 Prenota
               </button>
             </div>
-
           </form>
+
           <script>
-            document.getElementById('contactForm').addEventListener('submit', function(event) {
-
-              var response = grecaptcha.getResponse();
-              var error = document.getElementById('recaptchaError');
-
-              if (response.length === 0) {
-                event.preventDefault();
-                error.style.display = 'block';
-                return false;
-              }
-
-              error.style.display = 'none';
-            });
+            const cForm = document.getElementById('contactForm');
+            if (cForm) {
+              cForm.addEventListener('submit', function(event) {
+                const response = grecaptcha.getResponse();
+                const error = document.getElementById('recaptchaError');
+                if (response.length === 0) {
+                  event.preventDefault();
+                  if (error) error.style.display = 'block';
+                  return false;
+                }
+                if (error) error.style.display = 'none';
+              });
+            }
           </script>
-
         </div>
       </div>
     </div>
-    <?php
-    require 'inc/nav.php';
-    require 'inc/footer.php';
-    ?>
+  </div>
+</div>
+
+<?php
+require_once __DIR__ . '/inc/nav.php';
+require_once __DIR__ . '/inc/footer.php';

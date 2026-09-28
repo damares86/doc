@@ -1,5 +1,6 @@
 <?php
 
+declare(strict_types=1);
 
 ##############    Damares    ###############
 #                                          #
@@ -9,617 +10,364 @@
 #                                          #
 ############################################
 
+require_once __DIR__ . '/coreConfig.php';
 
-require __DIR__ . "/coreConfig.php";
+// Plugin ZIP upload
+if (filter_input(INPUT_POST, 'new') && isset($_FILES['zip_file']) && is_array($_FILES['zip_file'])) {
+    if (!empty($_FILES['zip_file']['name'])) {
+        $filename = basename((string) $_FILES['zip_file']['name']);
+        $source = (string) $_FILES['zip_file']['tmp_name'];
+        $type = (string) $_FILES['zip_file']['type'];
 
-if (filter_input(INPUT_POST, "new")) {
+        $nameParts = explode('.', $filename);
+        $ext = strtolower(end($nameParts));
 
-  if ($_FILES["zip_file"]["name"]) {
-    $filename = $_FILES["zip_file"]["name"];
-    $source = $_FILES["zip_file"]["tmp_name"];
-    $type = $_FILES["zip_file"]["type"];
+        if ($ext !== 'zip') {
+            header('Location: ../index.php?p=allPlugins&msg=pluginUploadFormatErr');
+            exit;
+        }
 
+        $pluginsDir = __DIR__ . '/../plugins/';
+        if (!is_dir($pluginsDir)) {
+            @mkdir($pluginsDir, 0755, true);
+        }
 
-    $name = explode(".", $filename);
-    $accepted_types = array('application/zip', 'application/x-zip-compressed', 'multipart/x-zip', 'application/x-compressed');
-    foreach ($accepted_types as $mime_type) {
-      if ($mime_type == $type) {
-        $okay = true;
-        break;
-      }
-    }
+        $targetPath = $pluginsDir . $filename;
 
-    $continue = strtolower($name[1]) == 'zip' ? true : false;
-    if (!$continue) {
-      header("Location: ../index.php?p=allPlugins&msg=pluginUploadFormatErr");
-      exit;
-    }
+        if (move_uploaded_file($source, $targetPath)) {
+            $zip = new ZipArchive();
+            if ($zip->open($targetPath) === true) {
+                $zip->extractTo($pluginsDir);
+                $zip->close();
+                @unlink($targetPath);
 
-    $path = "../plugins/";
-    if (!is_dir($path)) {
-      mkdir($path);
-      chmod($path, 0777);
-    }
+                $pluginFolder = $nameParts[0];
+                $configFile = "{$pluginsDir}{$pluginFolder}/config.php";
 
-    $target_path = "../plugins/" . $filename;  // change this to the correct site path
+                if (is_file($configFile)) {
+                    $pluginname = '';
+                    $description = '';
+                    require $configFile;
 
+                    $plugin->pluginname = $pluginname;
+                    $plugin->description = $description;
 
-    if (move_uploaded_file($source, $target_path)) {
-      $zip = new ZipArchive();
-      $x = $zip->open($target_path);
+                    if ($plugin->insert(['pluginname', 'description'])) {
+                        header('Location: ../index.php?p=allPlugins&msg=pluginUploadSucc');
+                        exit;
+                    }
+                }
+            }
+            header('Location: ../index.php?p=allPlugins&err=pluginDbErr');
+            exit;
+        }
 
-      $folder = "../plugins/";
-      if ($x === true) {
-        $zip->extractTo($folder); // change this to the correct site path
-        $zip->close();
-
-        $plugin->chmod_R($folder, 0777);
-
-        unlink($target_path);
-      }
-
-      require $folder . $name[0] . '/config.php';
-
-      $plugin->pluginname = $pluginname;
-      $plugin->description = $description;
-
-      if ($plugin->insert(['pluginname', 'description'])) {
-        header("Location: ../index.php?p=allPlugins&msg=pluginUploadSucc");
+        header('Location: ../index.php?p=allPlugins&err=pluginUploadErr');
         exit;
-      } else {
-        header("Location: ../index.php?p=allPlugins&err=pluginDbErr");
-        exit;
-      }
-    } else {
-      header("Location: ../index.php?p=allPlugins&err=pluginUploadErr");
-      exit;
     }
-  }
 }
 
-$op = filter_input(INPUT_GET, "op");
-
-$idPlugin = filter_input(INPUT_GET, "idPlugin");
+$op = (string) (filter_input(INPUT_GET, 'op', FILTER_DEFAULT) ?? '');
+$idPlugin = (int) (filter_input(INPUT_GET, 'idPlugin', FILTER_VALIDATE_INT) ?? 0);
 $plugin->id = $idPlugin;
-$pluginFolder = $plugin->showPluginnameById();
-$path = "../plugins/$pluginFolder";
+$pluginFolder = (string) ($plugin->showPluginnameById() ?? '');
+$path = __DIR__ . "/../plugins/{$pluginFolder}";
 
-include "$path/starter.php";
-$exclude = array('..', '.', 'alert', 'func', '.gitkeep');
-
-if ($op == "add") {
-
-  // create table
-
-  $error = 0;
-  $errorPerm = 0;
-  if ($query_create_table) {
-    if (!$db->query($query_create_table)) {
-      $error++;
-    }
-  }
-
-  //echo "create table -> ".$error."<br>" ;
-
-  if (isset($menu_link)) {
-    for ($i = 0; $i < count($menu_link); $i++) {
-      if ($menu_link[$i]['link'] != 'link_parent') {
-        $section->link = $menu_link[$i]['link'];
-        $section->label = $menu_link[$i]['label'];
-        $section->icon = $menu_link[$i]['icon'];
-
-        if (!$section->insertParent()) {
-          $error++;
-        }
-        //echo "insert parent-> ".$error."<br>" ;
-
-        // get the section parent inserted
-        $section->table = 'sectionParent';
-        $section->link = $menu_link[$i]['link'];
-        $stmt = $section->showAllWhere('id', ['link']);
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        extract($row);
-
-        // get the permission for the user that added the plugin
-        $rolessection->table = 'rolesSection';
-        $rolessection->role_id = $_SESSION['role_id'];
-        $stmt1 = $rolessection->showAllWhere('id', ['role_id']);
-        $row1 = $stmt1->fetch(PDO::FETCH_ASSOC);
-        extract($row1);
-
-        $permissions = explode(',', $row1['section_id']);
-        $permissions[] = $row['id'];
-
-        $permissions_str = implode(',', $permissions);
-
-        $rolessection->section_id = $permissions_str;
-
-        // set permission for the user that added the plugin
-        if (!$rolessection->update(['section_id'], 'role_id')) {
-          $errorPerm++;
-        }
-
-        //echo "perm parent-> ".$errorPerm."<br>" ;
-
-
-        // set permission for the root user
-        if ($_SESSION['role_id'] != 1) {
-          $rolessection->table = 'rolesSection';
-          $rolessection->section_id = $permissions_str;
-          $rolessection->role_id = 1;
-          if (!$rolessection->update(['section_id'], 'role_id')) {
-            $errorPerm++;
-          }
-          //echo "perm parent root-> ".$errorPerm."<br>" ;
-
-        }
-        $section->table = 'sectionParent';
-        $stmt5 = $section->showAllLimitDesc('id', 1);
-        $row5 = $stmt5->fetch(PDO::FETCH_ASSOC);
-        extract($row5);
-      } else {
-        $section->table = 'sectionParent';
-        $section->link = $link_parent;
-        $stmt5 = $section->showAllWhere('id', ['link']);
-        $row5 = $stmt5->fetch(PDO::FETCH_ASSOC);
-        extract($row5);
-      }
-
-      if (isset($menu_link[$i]['child'])) {
-
-        $child_link = $menu_link[$i]['child'];
-        for ($idx = 0; $idx < count($child_link); $idx++) {
-
-          $section->parent_id = $row5['id'];
-          $section->link = $child_link[$idx]['link'];
-          $section->label = $child_link[$idx]['label'];
-          $section->icon = $child_link[$idx]['icon'];
-          $section->show_menu = $child_link[$idx]['show_menu'];
-
-          if (!$section->insertChild()) {
-            $error++;
-          }
-          //echo "insert child-> ".$error."<br>" ;
-
-
-          // get the section parent inserted
-          $section->table = 'sectionChild';
-          $section->link = $child_link[$idx]['link'];
-          $stmt = $section->showAllWhere('id', ['link']);
-          $row = $stmt->fetch(PDO::FETCH_ASSOC);
-          extract($row);
-
-          // get the permission for the user that added the plugin
-          $rolessection->table = 'rolesSectionChild';
-          $rolessection->role_id = $_SESSION['role_id'];
-          $stmt1 = $rolessection->showAllWhere('id', ['role_id']);
-          $row1 = $stmt1->fetch(PDO::FETCH_ASSOC);
-          extract($row1);
-
-          $permissions = explode(',', $row1['section_id']);
-          $permissions[] = $row['id'];
-
-          $permissions_str = implode(',', $permissions);
-
-          $rolessection->section_id = $permissions_str;
-
-          // set permission for the user that added the plugin
-          if (!$rolessection->update(['section_id'], 'role_id')) {
-            $errorPerm++;
-            //echo "perm child-> ".$errorPerm."<br>" ;
-
-          }
-
-          // set permission for the root user
-          if ($_SESSION['role_id'] != 1) {
-            $rolessection->table = 'rolesSectionChild';
-            $rolessection->section_id = $permissions_str;
-            $rolessection->role_id = 1;
-            if (!$rolessection->update(['section_id'], 'role_id')) {
-              $errorPerm++;
-              //echo "perm child root-> ".$errorPerm."<br>" ;
-
-            }
-          }
-        }
-      }
-    }
-  }
-
-  $plugin->installed = 1;
-  $plugin->active = 1;
-  $plugin->pluginname = $pluginname;
-
-  if (!$plugin->update(['installed', 'active'], 'pluginname')) {
-    $error++;
-    //echo "update plugin-> ".$error."<br>" ;
-
-  }
-
-  // echo "update -> $error<br>";
-  $root = '../';
-
-
-  $exclude_folder = ['frontend', 'misc'];
-  foreach (glob("$path/*") as $row) {
-    $item = pathinfo($row);
-
-    if (is_dir($row) && !in_array($item['basename'], $exclude_folder)) {
-
-      foreach (glob($row . '/*') as $elem) {
-
-        if (is_dir($elem)) {
-
-          $item1 = pathinfo($elem);
-          foreach (glob($elem . '/*') as $elem_child) {
-
-            // skip if it's a directory
-            if (is_dir($elem_child)) {
-              continue;
-            }
-
-            $file_child = pathinfo($elem_child);
-
-            $source_file = $path . '/' . $item['basename'] . '/' . $item1['basename'] . '/' . $file_child['basename'];
-            $dest_file = $root . $item['basename'] . '/' . $item1['basename'] . '/' . $file_child['basename'];
-
-            if (!is_dir(dirname($dest_file))) {
-              mkdir(dirname($dest_file), 0755, true);
-            }
-
-            if (copy($source_file, $dest_file)) {
-              chmod($dest_file, 0755);
-            } else {
-              $error++;
-              // echo "$dest_file -> $error<br>";
-            }
-          }
-        } else {
-
-          // salta se è una directory
-          if (is_dir($elem)) {
-            continue;
-          }
-
-          $file_parent = pathinfo($elem);
-
-          $source_file = $elem;
-          $dest_file = $root . $item['basename'] . '/' . $file_parent['basename'];
-
-          if (!is_dir(dirname($dest_file))) {
-            mkdir(dirname($dest_file), 0755, true);
-          }
-
-          if (copy($source_file, $dest_file)) {
-            chmod($dest_file, 0755);
-          } else {
-            $error++;
-            // echo "$dest_file -> $error<br>";
-          }
-        }
-      }
-    }
-  }
-  unlink("../inc/class_initialize.php");
-  if ($error == 0) {
-
-    $perm = '';
-    if ($errorPerm > 0) {
-      $perm = '&err=pluginPerm';
-    }
-    header("Location: ../index.php?p=allPlugins&msg=pluginAdd$perm");
+if (empty($pluginFolder) || !is_dir($path)) {
+    header('Location: ../index.php?p=allPlugins&err=pluginNotFound');
     exit;
-  } else {
-    header("Location: ../index.php?p=allPlugins&err=pluginAddErr");
-    exit;
-  }
-} else if ($op == "dis") {
-
-  $error = 0;
-  $errorPerm = 0;
-
-  $pluginId = filter_input(INPUT_GET, 'idPlugin');
-  $plugin->id = $pluginId;
-  $stmt = $plugin->showAllWhere('id', ['id']);
-  $row = $stmt->fetch(PDO::FETCH_ASSOC);
-  extract($row);
-  $pluginname = $row['pluginname'];
-
-  if (!$db->query("UPDATE " . $prefix . "plugins SET active = 0 WHERE pluginname = '$pluginname'")) {
-    $error++;
-  }
-
-  if (isset($menu_link)) {
-
-    for ($i = 0; $i < count($menu_link); $i++) {
-
-      // $section->link = $menu_link[$i]['link'];
-      // $stmt = $plugin->showAllWhere('id',['link']) ;
-      // $row = $stmt->fetch(PDO::FETCH_ASSOC);
-      // extract($row);
-
-      if (isset($menu_link[$i]['child'])) {
-        $childSection = [];
-        $permissions_child_updated = [];
-
-        $child_link = $menu_link[$i]['child'];
-
-        for ($idx = 0; $idx < count($child_link); $idx++) {
-
-          $section->link = $child_link[$idx]['link'];
-          $section->table = 'sectionChild';
-          $stmt1 = $section->showAllWhere('id', ['link']);
-          $row1 = $stmt1->fetch(PDO::FETCH_ASSOC);
-          extract($row1);
-
-          $childSection[] = $row1['id'];
-
-          $section->link = $child_link[$idx]['link'];
-          if (!$section->deleteByLink("sectionChild")) {
-            $error++;
-          }
-        }
-
-        // get the permission for the user that disabled the plugin
-        $rolessection->table = 'rolesSectionChild';
-        $rolessection->role_id = $_SESSION['role_id'];
-        $stmt2 = $rolessection->showAllWhere('id', ['role_id']);
-        $row2 = $stmt2->fetch(PDO::FETCH_ASSOC);
-        extract($row2);
-
-        $permissions = explode(',', $row2['section_id']);
-
-
-        foreach ($childSection as $item) {
-          $permissions[] = $item;
-        }
-      }
-
-      $rolessection->table = 'rolesSectionChild';
-      $rolessection->role_id = $_SESSION['role_id'];
-      !is_null($permissions) ? $perm_child_str = implode(',', $permissions) : $perm_child_str = '';
-      $rolessection->section_id = $perm_child_str;
-
-      // set permission for the user that disabled the plugin
-      if (!$rolessection->update(['section_id'], 'role_id')) {
-        $errorPerm++;
-      }
-
-      // set permission for the root user
-      if ($_SESSION['role_id'] != 1) {
-        $rolessection->table = 'rolesSectionChild';
-        $rolessection->role_id = 1;
-        $rolessection->section_id = $perm_child_str;
-        if (!$rolessection->update(['section_id'], 'role_id')) {
-          $errorPerm++;
-        }
-      }
-
-      $parentSection = [];
-      $permissions_parent_updated = [];
-
-
-      if ($menu_link[$i]['link'] != 'link_parent') {
-        $section->link = $menu_link[$i]['link'];
-        $section->table = 'sectionParent';
-        $stmt3 = $section->showAllWhere('id', ['link']);
-        $row3 = $stmt3->fetch(PDO::FETCH_ASSOC);
-        extract($row3);
-
-        $parentSection[] = $row3['id'];
-
-        $section->link = $menu_link[$i]['link'];
-
-        if (!$section->deleteByLink("sectionParent")) {
-          $error++;
-        }
-
-        // get the permission for the user that disabled the plugin
-        $rolessection->table = 'rolesSection';
-        $rolessection->role_id = $_SESSION['role_id'];
-        $stmt4 = $rolessection->showAllWhere('id', ['role_id']);
-        $row4 = $stmt4->fetch(PDO::FETCH_ASSOC);
-        extract($row4);
-
-        $permissions = explode(',', $row4['section_id']);
-
-        foreach ($permissions as $item) {
-          if (!in_array($item, $parentSection)) {
-            $permissions_parent_updated[] = $item;
-          }
-        }
-      }
-    }
-
-    $rolessection->table = 'rolesSection';
-    $rolessection->role_id = $_SESSION['role_id'];
-    !is_null($perm_parent_str) ? $perm_parent_str = implode(',', $permissions_child_updated) : $perm_parent_str = '';
-    $rolessection->section_id = $perm_parent_str;
-
-    // set permission for the user that disabled the plugin
-    if (!$rolessection->update(['section_id'], 'role_id')) {
-      $errorPerm++;
-    }
-
-    // set permission for the root user
-    if ($_SESSION['role_id'] != 1) {
-      $rolessection->table = 'rolesSection';
-      $rolessection->role_id = 1;
-      $rolessection->section_id = $perm_parent_str;
-      if (!$rolessection->update(['section_id'], 'role_id')) {
-        $errorPerm++;
-      }
-    }
-  }
-
-  $err_perm_msg = '';
-  if ($errorPerm > 0) {
-    $err_perm_msg = '&err=errPermPlugin';
-  }
-
-  if ($error == 0) {
-    header("Location: ../index.php?p=allPlugins&msg=pluginDis$err_perm_msg ");
-    exit;
-  } else {
-    header("Location: ../index.php?p=allPlugins&err=pluginDisErr$err_perm_msg ");
-    exit;
-  }
-} else if ($op == "rm") {
-
-  // REMOVE
-  $error = 0;
-  $errorPerm = 0;
-
-  if ($query_drop_table) {
-    if (!$db->query($query_drop_table)) {
-      $error++;
-    }
-  }
-
-  // Recupera info plugin
-  $plugin->id = filter_input(INPUT_GET, 'idPlugin');
-  $plugin->table = 'plugins';
-  $stmt = $plugin->showAllWhere('id', ['id']);
-  $row = $stmt->fetch(PDO::FETCH_ASSOC);
-
-  if ($row && $row['active'] == 1 && isset($menu_link)) {
-    $currentRoleId = $_SESSION['role_id'];
-    $childSectionsToRemove = [];
-    $parentSectionsToRemove = [];
-
-    for ($i = 0; $i < count($menu_link); $i++) {
-
-      // === CHILD SECTION ===
-      if (isset($menu_link[$i]['child'])) {
-        $childLinks = $menu_link[$i]['child'];
-        foreach ($childLinks as $child) {
-          $section->link = $child['link'];
-          $section->table = 'sectionChild';
-
-          $stmt = $section->showAllWhere('id', ['link']);
-          $row = $stmt->fetch(PDO::FETCH_ASSOC);
-
-          if ($row && isset($row['id'])) {
-            $childSectionsToRemove[] = $row['id'];
-          }
-
-          // Elimina la sectionChild
-          if (!$section->deleteByLink('sectionChild')) {
-            $error++;
-          }
-        }
-      }
-
-      // === PARENT SECTION ===
-      if ($menu_link[$i]['link'] != 'link_parent') {
-        $section->link = $menu_link[$i]['link'];
-        $section->table = 'sectionParent';
-
-        $stmt = $section->showAllWhere('id', ['link']);
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        if ($row && isset($row['id'])) {
-          $parentSectionsToRemove[] = $row['id'];
-        }
-
-        // Elimina la sectionParent
-        if (!$section->deleteByLink('sectionParent')) {
-          $error++;
-        }
-      }
-    }
-
-    // === AGGIORNA PERMESSI CHILD ===
-    $rolessection->table = 'rolesSectionChild';
-
-    $stmt = $rolessection->showAllWhere('id', ['role_id']);
-    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-      $roleId = $row['role_id'];
-      $existing = array_filter(explode(',', $row['section_id']), 'strlen');
-      $updated = array_diff($existing, $childSectionsToRemove);
-      $sectionStr = implode(',', $updated);
-
-      // Non aggiornare il superuser se non necessario
-      if ($roleId == 1 && $currentRoleId == 1) continue;
-
-      $rolessection->role_id = $roleId;
-      $rolessection->section_id = $sectionStr;
-
-      if (!$rolessection->update(['section_id'], 'role_id')) {
-        $errorPerm++;
-      }
-    }
-
-    // === AGGIORNA PERMESSI PARENT ===
-    $rolessection->table = 'rolesSection';
-
-    $stmt = $rolessection->showAllWhere('id', ['role_id']);
-    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-      $roleId = $row['role_id'];
-      $existing = array_filter(explode(',', $row['section_id']), 'strlen');
-      $updated = array_diff($existing, $parentSectionsToRemove);
-      $sectionStr = implode(',', $updated);
-
-      // Non aggiornare il superuser se non necessario
-      if ($roleId == 1 && $currentRoleId == 1) continue;
-
-      $rolessection->role_id = $roleId;
-      $rolessection->section_id = $sectionStr;
-
-      if (!$rolessection->update(['section_id'], 'role_id')) {
-        $errorPerm++;
-      }
-    }
-  }
-
-  // Disattiva plugin
-  $plugin->id = filter_input(INPUT_GET, 'idPlugin');
-  $plugin->installed = 0;
-  $plugin->active = 0;
-
-  if (!$plugin->update(['installed', 'active'], 'id')) {
-    $error++;
-  }
-
-  // Rimuovi class_initialize
-  @unlink("../inc/class_initialize.php");
-
-  // DELETE ALL FILES (tranne frontend e misc)
-  $root = '../';
-  $exclude_folder = ['frontend', 'misc'];
-
-  foreach (glob("$path/*") as $folderPath) {
-    $folderInfo = pathinfo($folderPath);
-
-    if (is_dir($folderPath) && !in_array($folderInfo['basename'], $exclude_folder)) {
-      foreach (glob($folderPath . '/*') as $inner) {
-        if (is_dir($inner)) {
-          foreach (glob($inner . '/*') as $childFile) {
-            $fileInfo = pathinfo($childFile);
-            $destFile = $root . $folderInfo['basename'] . '/' . basename($inner) . '/' . $fileInfo['basename'];
-            if (file_exists($destFile) && !unlink($destFile)) {
-              $error++;
-            }
-          }
-        } else {
-          $fileInfo = pathinfo($inner);
-          $destFile = $root . $folderInfo['basename'] . '/' . $fileInfo['basename'];
-          if (file_exists($destFile) && !unlink($destFile)) {
-            $error++;
-          }
-        }
-      }
-    }
-  }
-
-  // REDIRECT
-  $err_perm_msg = ($errorPerm > 0) ? '&err=errPermPlugin' : '';
-
-  if ($error == 0) {
-    header("Location: ../index.php?p=allPlugins&msg=pluginRm$err_perm_msg");
-    exit;
-  } else {
-    header("Location: ../index.php?p=allPlugins&err=pluginRmErr$err_perm_msg");
-    exit;
-  }
 }
+
+$starterFile = "{$path}/starter.php";
+if (is_file($starterFile)) {
+    $query_create_table = '';
+    $query_drop_table = '';
+    $menu_link = [];
+    $link_parent = '';
+    $description = '';
+    $pluginname = '';
+    include $starterFile;
+}
+
+if ($op === 'add') {
+    $error = 0;
+    $errorPerm = 0;
+
+    if (!empty($query_create_table) && $db) {
+        try {
+            $db->exec($query_create_table);
+        } catch (PDOException) {
+            $error++;
+        }
+    }
+
+    if (!empty($menu_link) && is_array($menu_link)) {
+        foreach ($menu_link as $mItem) {
+            $parentInsertedId = 0;
+            if (($mItem['link'] ?? '') !== 'link_parent') {
+                $section->link = (string) ($mItem['link'] ?? '');
+                $section->label = (string) ($mItem['label'] ?? '');
+                $section->icon = (string) ($mItem['icon'] ?? '');
+
+                if (!$section->insertParent()) {
+                    $error++;
+                }
+
+                $section->table = 'section_parent';
+                $stmt = $section->showAllWhere('id', ['link']);
+                $row = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : null;
+                $pId = $row ? (int) $row['id'] : 0;
+                $parentInsertedId = $pId;
+
+                // User permissions
+                $rolessection->table = 'roles_section';
+                $rolessection->role_id = (int) ($_SESSION['role_id'] ?? 0);
+                $stmt1 = $rolessection->showAllWhere('id', ['role_id']);
+                $row1 = $stmt1 ? $stmt1->fetch(PDO::FETCH_ASSOC) : null;
+
+                $permissions = !empty($row1['section_id']) ? explode(',', (string) $row1['section_id']) : [];
+                if ($pId && !in_array((string) $pId, $permissions, true)) {
+                    $permissions[] = (string) $pId;
+                }
+                $permissions_str = implode(',', $permissions);
+                $rolessection->section_id = $permissions_str;
+
+                if (!$rolessection->update(['section_id'], 'role_id')) {
+                    $errorPerm++;
+                }
+
+                if ((int) ($_SESSION['role_id'] ?? 0) !== 1) {
+                    $rolessection->role_id = 1;
+                    $rolessection->section_id = $permissions_str;
+                    if (!$rolessection->update(['section_id'], 'role_id')) {
+                        $errorPerm++;
+                    }
+                }
+            } else {
+                $section->table = 'section_parent';
+                $section->link = (string) ($link_parent ?? '');
+                $stmt5 = $section->showAllWhere('id', ['link']);
+                $row5 = $stmt5 ? $stmt5->fetch(PDO::FETCH_ASSOC) : null;
+                $parentInsertedId = $row5 ? (int) $row5['id'] : 0;
+            }
+
+            if (!empty($mItem['child']) && is_array($mItem['child'])) {
+                foreach ($mItem['child'] as $cItem) {
+                    $section->parent_id = $parentInsertedId;
+                    $section->link = (string) ($cItem['link'] ?? '');
+                    $section->label = (string) ($cItem['label'] ?? '');
+                    $section->icon = (string) ($cItem['icon'] ?? '');
+                    $section->show_menu = (int) ($cItem['show_menu'] ?? 1);
+
+                    if (!$section->insertChild()) {
+                        $error++;
+                    }
+
+                    $section->table = 'section_child';
+                    $stmtC = $section->showAllWhere('id', ['link']);
+                    $rowC = $stmtC ? $stmtC->fetch(PDO::FETCH_ASSOC) : null;
+                    $cId = $rowC ? (int) $rowC['id'] : 0;
+
+                    $rolessection->table = 'roles_section_child';
+                    $rolessection->role_id = (int) ($_SESSION['role_id'] ?? 0);
+                    $stmt1C = $rolessection->showAllWhere('id', ['role_id']);
+                    $row1C = $stmt1C ? $stmt1C->fetch(PDO::FETCH_ASSOC) : null;
+
+                    $permissionsC = !empty($row1C['section_id']) ? explode(',', (string) $row1C['section_id']) : [];
+                    if ($cId && !in_array((string) $cId, $permissionsC, true)) {
+                        $permissionsC[] = (string) $cId;
+                    }
+                    $permissionsCStr = implode(',', $permissionsC);
+                    $rolessection->section_id = $permissionsCStr;
+
+                    if (!$rolessection->update(['section_id'], 'role_id')) {
+                        $errorPerm++;
+                    }
+
+                    if ((int) ($_SESSION['role_id'] ?? 0) !== 1) {
+                        $rolessection->role_id = 1;
+                        $rolessection->section_id = $permissionsCStr;
+                        if (!$rolessection->update(['section_id'], 'role_id')) {
+                            $errorPerm++;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    $plugin->installed = 1;
+    $plugin->active = 1;
+    $plugin->pluginname = $pluginFolder;
+
+    if (!$plugin->update(['installed', 'active'], 'pluginname')) {
+        $error++;
+    }
+
+    $root = __DIR__ . '/../';
+    $exclude_folder = ['frontend', 'misc'];
+
+    $folders = glob("{$path}/*") ?: [];
+    foreach ($folders as $row) {
+        $item = pathinfo($row);
+        if (is_dir($row) && !in_array($item['basename'], $exclude_folder, true)) {
+            $inner = glob($row . '/*') ?: [];
+            foreach ($inner as $elem) {
+                if (is_dir($elem)) {
+                    $item1 = pathinfo($elem);
+                    $children = glob($elem . '/*') ?: [];
+                    foreach ($children as $elem_child) {
+                        if (is_dir($elem_child)) {
+                            continue;
+                        }
+                        $file_child = pathinfo($elem_child);
+                        $dest_file = $root . $item['basename'] . '/' . $item1['basename'] . '/' . $file_child['basename'];
+                        if (!is_dir(dirname($dest_file))) {
+                            @mkdir(dirname($dest_file), 0755, true);
+                        }
+                        if (!copy($elem_child, $dest_file)) {
+                            $error++;
+                        }
+                    }
+                } else {
+                    $file_parent = pathinfo($elem);
+                    $dest_file = $root . $item['basename'] . '/' . $file_parent['basename'];
+                    if (!is_dir(dirname($dest_file))) {
+                        @mkdir(dirname($dest_file), 0755, true);
+                    }
+                    if (!copy($elem, $dest_file)) {
+                        $error++;
+                    }
+                }
+            }
+        }
+    }
+
+    @unlink(__DIR__ . '/../inc/class_initialize.php');
+
+    $permMsg = $errorPerm > 0 ? '&err=pluginPerm' : '';
+    if ($error === 0) {
+        header("Location: ../index.php?p=allPlugins&msg=pluginAdd{$permMsg}");
+        exit;
+    }
+
+    header('Location: ../index.php?p=allPlugins&err=pluginAddErr');
+    exit;
+}
+
+if ($op === 'dis') {
+    $error = 0;
+    $errorPerm = 0;
+
+    $plugin->active = 0;
+    $plugin->pluginname = $pluginFolder;
+    if (!$plugin->update(['active'], 'pluginname')) {
+        $error++;
+    }
+
+    if (!empty($menu_link) && is_array($menu_link)) {
+        foreach ($menu_link as $mItem) {
+            if (!empty($mItem['child']) && is_array($mItem['child'])) {
+                foreach ($mItem['child'] as $cItem) {
+                    $section->link = (string) ($cItem['link'] ?? '');
+                    if (!$section->deleteByLink('section_child')) {
+                        $error++;
+                    }
+                }
+            }
+
+            if (($mItem['link'] ?? '') !== 'link_parent') {
+                $section->link = (string) ($mItem['link'] ?? '');
+                if (!$section->deleteByLink('section_parent')) {
+                    $error++;
+                }
+            }
+        }
+    }
+
+    if ($error === 0) {
+        header('Location: ../index.php?p=allPlugins&msg=pluginDis');
+        exit;
+    }
+
+    header('Location: ../index.php?p=allPlugins&err=pluginDisErr');
+    exit;
+}
+
+if ($op === 'rm') {
+    $error = 0;
+    $errorPerm = 0;
+
+    if (!empty($query_drop_table) && $db) {
+        try {
+            $db->exec($query_drop_table);
+        } catch (PDOException) {
+            $error++;
+        }
+    }
+
+    if (!empty($menu_link) && is_array($menu_link)) {
+        foreach ($menu_link as $mItem) {
+            if (!empty($mItem['child']) && is_array($mItem['child'])) {
+                foreach ($mItem['child'] as $cItem) {
+                    $section->link = (string) ($cItem['link'] ?? '');
+                    $section->deleteByLink('section_child');
+                }
+            }
+
+            if (($mItem['link'] ?? '') !== 'link_parent') {
+                $section->link = (string) ($mItem['link'] ?? '');
+                $section->deleteByLink('section_parent');
+            }
+        }
+    }
+
+    $plugin->installed = 0;
+    $plugin->active = 0;
+    $plugin->id = $idPlugin;
+    if (!$plugin->update(['installed', 'active'], 'id')) {
+        $error++;
+    }
+
+    @unlink(__DIR__ . '/../inc/class_initialize.php');
+
+    $root = __DIR__ . '/../';
+    $exclude_folder = ['frontend', 'misc'];
+
+    $folders = glob("{$path}/*") ?: [];
+    foreach ($folders as $folderPath) {
+        $folderInfo = pathinfo($folderPath);
+        if (is_dir($folderPath) && !in_array($folderInfo['basename'], $exclude_folder, true)) {
+            $inners = glob("{$folderPath}/*") ?: [];
+            foreach ($inners as $inner) {
+                if (is_dir($inner)) {
+                    $childFiles = glob("{$inner}/*") ?: [];
+                    foreach ($childFiles as $childFile) {
+                        $fileInfo = pathinfo($childFile);
+                        $destFile = $root . $folderInfo['basename'] . '/' . basename($inner) . '/' . $fileInfo['basename'];
+                        if (is_file($destFile)) {
+                            @unlink($destFile);
+                        }
+                    }
+                } else {
+                    $fileInfo = pathinfo($inner);
+                    $destFile = $root . $folderInfo['basename'] . '/' . $fileInfo['basename'];
+                    if (is_file($destFile)) {
+                        @unlink($destFile);
+                    }
+                }
+            }
+        }
+    }
+
+    if ($error === 0) {
+        header('Location: ../index.php?p=allPlugins&msg=pluginRm');
+        exit;
+    }
+
+    header('Location: ../index.php?p=allPlugins&err=pluginRmErr');
+    exit;
+}
+
+header('Location: ../index.php?p=allPlugins&msg=noPost');
+exit;

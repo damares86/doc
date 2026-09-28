@@ -1,58 +1,66 @@
 <?php
 
-require '../vendor/autoload.php';		// If installed via composer
-$debug = new \bdk\Debug(array(
-	'collect' => true,
-	'output' => true,
-));
+declare(strict_types=1);
 
-session_start();
-session_destroy();
+##############    Damares    ###############
+#                                          #
+#    A backend project by DM WebLab        #
+#   Website: https://www.dmweblab.com      #
+#   GitHub: https://github.com/damares86   #
+#                                          #
+############################################
 
-spl_autoload_register('autoloader');
-
-function autoloader($class){
-	include("../class/$class.php");
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
 }
 
-$database = new Database();
-$db = $database->getConnection();
+$_SESSION = [];
+if (ini_get('session.use_cookies')) {
+    $params = session_get_cookie_params();
+    setcookie(
+        session_name(),
+        '',
+        time() - 42000,
+        $params['path'],
+        $params['domain'],
+        $params['secure'],
+        $params['httponly']
+    );
+}
+session_destroy();
 
-require "../inc/class_initialize.php" ;
+spl_autoload_register(static function (string $class): void {
+    $file = __DIR__ . "/../class/{$class}.php";
+    if (is_file($file)) {
+        require_once $file;
+    }
+});
 
-$module = $plugin->showAll('id');
-foreach($module as $row){
-    $plugin->pluginname = $row['pluginname'] ;
-        if($plugin->itemExists('pluginname') && $plugin->isActive()==1){
-            $scan = scandir("plugins/".$row['pluginname']."/class");
-            $exclude = array('..', '.','.gitkeep');
-            foreach($scan as $file){
-            if (!in_array($file,$exclude)) {
-                $item = pathinfo($file);
-                include "class/plugin/".$item['basename']."";
-            }
+if (is_file(__DIR__ . '/../class/Database.php')) {
+    require_once __DIR__ . '/../class/Database.php';
+    $database = new Database();
+    $db = $database->getConnection();
+
+    if ($db && isset($_COOKIE['damares-login'])) {
+        $pieces = explode(',', (string) $_COOKIE['damares-login']);
+        if (!empty($pieces[0])) {
+            $account = new Account($db);
+            $account->id = (int) $pieces[0];
+            $account->auth_token = 'none';
+            $account->update(['auth_token'], 'id');
         }
     }
 }
 
-
-if(isset($_COOKIE['damares-login'])){
-    $pieces = explode(",", $_COOKIE['damares-login']);
-    echo "pieces<br>";
-    print_r($pieces);
-    $id = $pieces[0];
-    $account->id = $pieces[0];
-    $token = "none";
-    $account->auth_token = "none";
-
-
-    $account->update(['auth_token'],'id');
-
+if (isset($_COOKIE['damares-login'])) {
     unset($_COOKIE['damares-login']);
-    setcookie("damares-login", '', time() - 3600,"/");
+    setcookie('damares-login', '', [
+        'expires' => time() - 3600,
+        'path' => '/',
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ]);
 }
 
-
-// Redirect to the login page:
 header('Location: ../index.php');
-?>
+exit;

@@ -1,4 +1,6 @@
-<?php 
+<?php
+
+declare(strict_types=1);
 
 ##############    Damares    ###############
 #                                          #
@@ -8,14 +10,9 @@
 #                                          #
 ############################################
 
-class Verify extends Common{
-
-    public $table = "verify";
-    public $secret ;
-    public $public ;
-  
-    
-
+class Verify extends Common
+{
+    public string $table = 'verify';
+    public ?string $secret = null;
+    public ?string $public = null;
 }
-
-?>

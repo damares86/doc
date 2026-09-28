@@ -1,136 +1,167 @@
 <?php
-require "core/prefix.php";
-require __DIR__ . "/damares_version.php";
 
-spl_autoload_register('autoloader');
-function autoloader($class)
-{
-    include("class/$class.php");
+declare(strict_types=1);
+
+##############    Damares    ###############
+#                                          #
+#    A backend project by DM WebLab        #
+#   Website: https://www.dmweblab.com      #
+#   GitHub: https://github.com/damares86   #
+#                                          #
+############################################
+
+$prefixFile = __DIR__ . '/../core/prefix.php';
+$prefix = '';
+if (is_file($prefixFile)) {
+    require_once $prefixFile;
+}
+
+require_once __DIR__ . '/damares_version.php';
+
+// Register autoloader for class directory
+spl_autoload_register(static function (string $class): void {
+    $file = __DIR__ . "/../class/{$class}.php";
+    if (is_file($file)) {
+        require_once $file;
+    }
+});
+
+// Composer autoloader if present
+$vendorAutoload = __DIR__ . '/../vendor/autoload.php';
+if (is_file($vendorAutoload)) {
+    require_once $vendorAutoload;
 }
 
 $database = new Database();
 $db = $database->getConnection();
 
-// recall of all the classes
-$files = glob("class/*.php", GLOB_BRACE);
-rsort($files);
+// Instantiate core models
+$common = new Common($db);
+$account = new Account($db);
+$auth = new Auth($db);
+$role = new Role($db);
+$setting = new Setting($db);
+$section = new Section($db);
+$file = new File($db);
+$plugin = new Plugin($db);
+$home = new Home($db);
+$rolessection = new RolesSection($db);
+$accountroles = new AccountRoles($db);
 
-// creation of the file with all the initialization of the classes
-if (!is_file('inc/class_initialize.php')) {
-    $file_handle = fopen('inc/class_initialize.php', 'w');
-    fwrite($file_handle, '<?php');
-    fwrite($file_handle, "\n");
-    foreach ($files as $filename) {
-        $nomefile = pathinfo($filename);
-        $file = $nomefile['filename'];
-        $file_var = strtolower($file);
-        fwrite($file_handle, '$' . $file_var . ' = new ' . $file . '($db);');
-        fwrite($file_handle, "\n");
+// Fallback dynamic instantiation file for backward compatibility with plugins
+if (!is_file(__DIR__ . '/class_initialize.php')) {
+    $classFiles = glob(__DIR__ . '/../class/*.php') ?: [];
+    rsort($classFiles);
+    $initContent = "<?php\n// Auto-generated class initialization\n";
+    foreach ($classFiles as $cFile) {
+        $cName = pathinfo($cFile, PATHINFO_FILENAME);
+        $varName = strtolower($cName);
+        $initContent .= "\${$varName} = new {$cName}(\$db);\n";
     }
-    if ($prefix) {
-        fwrite($file_handle, '$common->prx = "' . $prefix . '_";');
-        fwrite($file_handle, "\n");
+    if (!empty($prefix)) {
+        $initContent .= "\$common->prx = '{$prefix}_';\n";
     }
-    fwrite($file_handle, "?>");
-    chmod('inc/class_initialize.php', 0777);
+    file_put_contents(__DIR__ . '/class_initialize.php', $initContent);
 }
-include "inc/class_initialize.php";
 
-// check if the user is logged
+// Session check
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+// Check login status
 if (!isset($_SESSION['loggedin']) && !isset($_SESSION['account_id'])) {
-    require "inc/check_cookie.php";
+    require_once __DIR__ . '/check_cookie.php';
     header('Location: ../login/auth-login.php?err=noLogin');
     exit;
-} else if (isset($_COOKIE['damares-login'])) {
-    $pieces = explode(",", $_COOKIE['damares-login']);
-    $auth->id = $pieces[0];
-    $id = $pieces[0];
-    $auth->auth_token = $pieces[1];
+}
 
-    if (!$auth->checkCookie() > 0) {
-        header("Location: ../login/auth-login.php?err=noLogin");
-        exit;
-    }
+if (isset($_COOKIE['damares-login'])) {
+    $pieces = explode(',', (string) $_COOKIE['damares-login']);
+    if (count($pieces) >= 2) {
+        $auth->id = (int) $pieces[0];
+        $auth->auth_token = $pieces[1];
 
-    $role->id = $_SESSION['role_id'];
-
-    $setting->name = "role_redirect";
-    $stmt = $setting->showAllWhere('id', ['name']);
-    $row = $stmt->fetch(PDO::FETCH_ASSOC);
-    $redir = $row['value'];
-
-    if ($redir == 1) {
-        $stmt = $role->showAllWhere('id', ['id']);
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        extract($row);
-        if ($row['redirect'] != "none") {
-            header("Location: " . $row['redirect'] . "");
+        if ($auth->checkCookie() <= 0) {
+            header('Location: ../login/auth-login.php?err=noLogin');
             exit;
         }
-    }
 
-    $export = false;
-    $plugin->pluginname = "export_xlsx";
+        $role->id = (int) ($_SESSION['role_id'] ?? 0);
 
-    if ($plugin->itemExists('pluginname') && $plugin->isActive() == 1) {
-        $export = true;
+        $setting->name = 'role_redirect';
+        $stmt = $setting->showAllWhere('id', ['name']);
+        $row = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : null;
+        $redir = $row['value'] ?? '0';
+
+        if ((string) $redir === '1') {
+            $stmt = $role->showAllWhere('id', ['id']);
+            $row = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : null;
+            if ($row && !empty($row['redirect']) && $row['redirect'] !== 'none') {
+                header('Location: ' . $row['redirect']);
+                exit;
+            }
+        }
     }
 }
 
-// check if the debug mode is active
-$setting->name = "debug";
+$export = false;
+$plugin->pluginname = 'export_xlsx';
+if ($plugin->itemExists('pluginname') && (int) $plugin->isActive() === 1) {
+    $export = true;
+}
+
+// Check debug mode
+$setting->name = 'debug';
 $dbg = $setting->showAllWhere('id', ['name']);
-$row_debug = $dbg->fetch(PDO::FETCH_ASSOC);
-extract($row_debug);
+$row_debug = $dbg ? $dbg->fetch(PDO::FETCH_ASSOC) : null;
 
-if ($row_debug['value'] == 1) {
-    require 'vendor/autoload.php';        // If installed via composer
-    $debug = new \bdk\Debug(array(
-        'collect' => true,
-        'output' => true,
-    ));
+if ($row_debug && (string) ($row_debug['value'] ?? '0') === '1') {
+    if (class_exists(\bdk\Debug::class)) {
+        $debug = new \bdk\Debug([
+            'collect' => true,
+            'output' => true,
+        ]);
+    }
 }
 
-// get the p from url if exists
-if (filter_input(INPUT_GET, "p")) {
-    $page = filter_input(INPUT_GET, "p");
-} else {
-    $page = "index";
+// Determine active page
+$page = filter_input(INPUT_GET, 'p', FILTER_DEFAULT);
+if (empty($page)) {
+    $page = 'index';
 }
+$page = preg_replace('/[^a-zA-Z0-9_-]/', '', (string) $page);
 
-// check the page position in the page tree
-$pageLabel = "";
-$pageId = "";
-$parent = $section->showByLink($page, 'sectionParent');
-$child = $section->showByLink($page, 'sectionChild');
+// Check page tree hierarchy
+$pageLabel = '';
+$pageLink = '';
+$pageId = '';
+$check_parent = 0;
+
+$parent = $section->showByLink($page, 'section_parent');
+$child = $section->showByLink($page, 'section_child');
 
 if ($parent) {
-    $pageLabel = $parent['label'];
-    $pageLink = $parent['link'];
-    $pageId = $parent['id'];
-    $check_parent = $pageId;
-} else if ($child) {
-    $pageLabel = $child['label'];
-    $pageLink = $child['link'];
-    $pageId = $child['id'];
-    $check_parent = 0;
-} else {
-    $pageLabel = "";
-    $pageLink = "";
-    $pageId = "";
+    $pageLabel = (string) ($parent['label'] ?? '');
+    $pageLink = (string) ($parent['link'] ?? '');
+    $pageId = (string) ($parent['id'] ?? '');
+    $check_parent = (int) $pageId;
+} elseif ($child) {
+    $pageLabel = (string) ($child['label'] ?? '');
+    $pageLink = (string) ($child['link'] ?? '');
+    $pageId = (string) ($child['id'] ?? '');
     $check_parent = 0;
 }
 
-// check the language set
-$setting->name = "lang";
+// Language setting
+$setting->name = 'lang';
 $stmt = $setting->showByName();
-$lang = $stmt['value'];
+$lang = is_array($stmt) && !empty($stmt['value']) ? (string) $stmt['value'] : 'en';
 $_SESSION['lang'] = $lang;
 
-foreach (glob("locale/$lang/*.php") as $row) {
-    require "$row";
+$localeFiles = glob(__DIR__ . "/../locale/{$lang}/*.php") ?: [];
+foreach ($localeFiles as $lFile) {
+    require_once $lFile;
 }
 
-// variable for require script for chart
 $apex = '';
-

@@ -1,5 +1,6 @@
 <?php
 
+declare(strict_types=1);
 
 ##############    Damares    ###############
 #                                          #
@@ -9,166 +10,127 @@
 #                                          #
 ############################################
 
-
-require '../vendor/autoload.php';		// If installed via composer
-$debug = new \bdk\Debug(array(
-	'collect' => true,
-	'output' => true,
-));
-
-spl_autoload_register('autoloader');
-
-function autoloader($class){
-	include("../class/$class.php");
+$vendorAutoload = __DIR__ . '/../vendor/autoload.php';
+if (is_file($vendorAutoload)) {
+    require_once $vendorAutoload;
 }
+
+spl_autoload_register(static function (string $class): void {
+    $file = __DIR__ . "/../class/{$class}.php";
+    if (is_file($file)) {
+        require_once $file;
+    }
+});
 
 $database = new Database();
 $db = $database->getConnection();
 
-include "../inc/class_initialize.php";
+$common = new Common($db);
+$account = new Account($db);
+$auth = new Auth($db);
+$role = new Role($db);
+$setting = new Setting($db);
 
-$email=$_POST['email'];
+$email = (string) (filter_input(INPUT_POST, 'email', FILTER_SANITIZE_EMAIL) ?? '');
 
-$setting->name="lang" ;
+$setting->name = 'lang';
 $stmt = $setting->showByName();
-$lang = $stmt['value'];
+$lang = is_array($stmt) && !empty($stmt['value']) ? (string) $stmt['value'] : 'en';
 
-foreach (glob("../locale/$lang/*.php") as $row){
-    require "$row";
+$localeFiles = glob(__DIR__ . "/../locale/{$lang}/*.php") ?: [];
+foreach ($localeFiles as $lFile) {
+    require_once $lFile;
 }
 
-$resetForm = filter_input(INPUT_POST, "resetForm");
-$resetMail = filter_input(INPUT_POST, "resetMail");
+$resetForm = filter_input(INPUT_POST, 'resetForm', FILTER_DEFAULT);
+$resetMail = filter_input(INPUT_POST, 'resetMail', FILTER_DEFAULT);
 
-if($resetForm){
-	
-	$auth->email=$email;
-	$email_exists=$auth->emailExists();	
-	
-	if(!$email_exists){
-		header("Location: ../../login/auth-forgot-password.php?err=mailNotReg");
-		exit;
-	}
-	$account->email = $email ;
+if ($resetForm) {
+    $auth->email = $email;
+    $email_exists = $auth->emailExists();
 
-	$pswTmp = $account->getPswTmpDataByEmail();
+    if (!$email_exists) {
+        header('Location: ../../login/auth-forgot-password.php?err=mailNotReg');
+        exit;
+    }
 
+    $account->email = $email;
+    $pswTmp = $account->getPswTmpDataByEmail();
 
-		$curDate=date("Y-m-d H:i:s");
-		$expDate=$pswTmp['expDate'];
-		
-		if((!$pswTmp['email']||(($pswTmp['email']) && ($expDate<$curDate)))){
-			$account->table = 'password_reset_temp' ;
-			$stmt=$account->delete('email');
-			if(!$stmt){
-				header("Location: ../../login.php?err=noResetDelete");
-				exit;
-			}else {
-				$expFormat = mktime(date("H")+2, date("i"), date("s"), date("m") ,date("d"), date("Y"));
-				$expDate = date("Y-m-d H:i:s",$expFormat);
-				
-				$token = md5($email);
-				$addToken= substr(md5(uniqid(rand(),1)),3,10);
-				$token = $token . $addToken;
-				$account->token=$token;
-				$account->expDate = $expDate ;
-				$account->table = 'password_reset_temp' ;
-			if($account->insert(['email','token','expDate'])){
+    $curDate = date('Y-m-d H:i:s');
+    $expDate = $pswTmp['expDate'] ?? '';
 
-				$url = $_SERVER['SERVER_NAME'];
+    if (!$pswTmp || empty($pswTmp['email']) || ($expDate < $curDate)) {
+        $account->table = 'password_reset_temp';
+        $account->delete('email');
 
-				$setting->name="noreply";
-				$stmt=$setting->showAllWhere('id',['name']);
-				$row=$stmt->fetch(PDO::FETCH_ASSOC);
-				$from=$row['value'];
+        $expDateNew = date('Y-m-d H:i:s', time() + 7200); // 2 hours validity
+        $token = bin2hex(random_bytes(32));
 
-				$setting->name="noreply" ;
-				$stmt = $setting->showByName();
-				$noreply = $stmt['value'];
+        $account->token = $token;
+        $account->expDate = $expDateNew;
+        $account->table = 'password_reset_temp';
 
-				$from = $noreply ;
+        if ($account->insert(['email', 'token', 'expDate'])) {
+            $url = $_SERVER['SERVER_NAME'] ?? 'localhost';
+            $setting->name = 'noreply';
+            $stmt = $setting->showByName();
+            $from = is_array($stmt) && !empty($stmt['value']) ? (string) $stmt['value'] : 'noreply@example.com';
 
-				// To send HTML mail, the Content-type header must be set
-				$headers  = 'MIME-Version: 1.0' . "\r\n";
-				$headers .= 'Content-type: text/html; charset=iso-8859-1' . "\r\n";
-				// Create email headers
-				$headers .= 'From: '.$from."\r\n".
-				'Reply-To: '.$from."\r\n" .
-				'X-Mailer: PHP/' . phpversion();
+            $headers = "MIME-Version: 1.0\r\n";
+            $headers .= "Content-type: text/html; charset=utf-8\r\n";
+            $headers .= "From: {$from}\r\n";
+            $headers .= "Reply-To: {$from}\r\n";
+            $headers .= 'X-Mailer: PHP/' . phpversion();
 
-				$output=$block1;
-				$output.='<p><a href="http://'.$url.'/login/auth-forgot-password.php?email='.$email.'&token='.$token.'&op=reset" target="_blank">http://'.$url.'/login/auth-forgot-password.php?email='.$email.'&token='.$token.'&op=reset</a></p>';		
-				$output.=$block2;
+            $resetUrl = "http://{$url}/login/auth-forgot-password.php?email=" . urlencode($email) . "&token={$token}&op=reset";
+            $output = ($block1 ?? '') . "<p><a href=\"{$resetUrl}\" target=\"_blank\">{$resetUrl}</a></p>" . ($block2 ?? '');
 
-				$to= $email; 
-				$subject="Reset password Damares";
+            $subject = 'Reset password Damares';
 
-				
-				if (mail ($to, $subject, $output, $headers)) {
-					header("Location: ../../login/auth-login.php?msg=sentMail");
-					exit;
-				} else {
-					header("Location: ../../login/auth-login.php?err=errSendMail");
-					exit;
-				}
-			
-			}else{	
-				header("Location: ../../login/auth-login.php?err=noReset");
-				exit;
-			}
-		}
-		} else{
-			header("Location: ../../login/auth-login.php?err=errResetRequest");
-			exit;
-		}
-	}else if($resetMail) {
+            if (@mail($email, $subject, $output, $headers)) {
+                header('Location: ../../login/auth-login.php?msg=sentMail');
+                exit;
+            }
 
-		$email=filter_input(INPUT_POST, "email");
-		$account->email=$email;
-		$stmt = $account->showAllWhere('id',['email']);
-		$row=$stmt->fetch(PDO::FETCH_ASSOC);
-		
-		if(!$_POST['password']){
-			header("Location: ../../login.php?msg=pswEmpty");
-			exit;
-		}
-		
-		$password = $_POST['password'];
-        $password_hash = password_hash($password, PASSWORD_BCRYPT);
-		$account->password = $password_hash;
-		$account->id = $row['id'] ;
-		$account->table = 'password_reset_temp';
+            header('Location: ../../login/auth-login.php?err=errSendMail');
+            exit;
+        }
 
-		// update the post
-		if($account->update(['password'],'id')){
-			if($account->delete('email')){
-				header("Location: ../../login/auth-login.php?msg=newPass");
-				exit;
-			}else{
-				header("Location: ../../login/auth-login.php?err=keyDelErr");
-				exit;
-			}
-			// empty posted values
-			// $_POST=array();
-			
-		}else{
-			header("Location: ../../login/auth-login.php?err=pswEditErr");
-			exit;
-		}
-	}else{
-header("Location: ../../login/auth-login.php?msg=errPost");
-exit;
+        header('Location: ../../login/auth-login.php?err=noReset');
+        exit;
+    }
+
+    header('Location: ../../login/auth-login.php?err=errResetRequest');
+    exit;
 }
+
+if ($resetMail) {
+    $account->email = $email;
+    $stmt = $account->showAllWhere('id', ['email']);
+    $row = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : null;
+
+    $password = (string) ($_POST['password'] ?? '');
+    if (empty($password) || !$row) {
+        header('Location: ../../login/auth-forgot-password.php?msg=pswEmpty');
+        exit;
+    }
+
+    $password_hash = password_hash($password, PASSWORD_DEFAULT);
+    $account->password = $password_hash;
+    $account->id = (int) $row['id'];
+    $account->table = 'accounts';
+
+    if ($account->update(['password'], 'id')) {
+        $account->table = 'password_reset_temp';
+        $account->delete('email');
+        header('Location: ../../login/auth-login.php?msg=newPass');
+        exit;
+    }
+
+    header('Location: ../../login/auth-login.php?err=pswEditErr');
+    exit;
+}
+
+header('Location: ../../login/auth-login.php?msg=errPost');
 exit;
-
-?>
-
-
-
-
-
-
-
-
-
-

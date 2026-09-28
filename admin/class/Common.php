@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 ##############    Damares    ###############
 #                                          #
 #    A backend project by DM WebLab        #
@@ -8,494 +10,564 @@
 #                                          #
 ############################################
 
+#[\AllowDynamicProperties]
 class Common
 {
+    public ?PDO $conn = null;
+    public ?PDOStatement $stmt = null;
+    public string $table = '';
+    public string $where = '';
+    public string|array $fields = '';
+    public int|string|null $id = null;
+    public string $prx = '';
+    public ?string $operation = null;
+    public ?string $origin = null;
+    protected string $prefix = '';
 
-    public $conn;
-    public $stmt;
-    public $table;
-    public $where;
-    public $fields;
-    public $id;
-    public $prx;
-    public $operation;
-    public $origin;
-    protected $prefix;
-
-
-    // constructor
-
-    public function __construct($db)
+    /**
+     * Common constructor.
+     *
+     * @param PDO|null $db
+     */
+    public function __construct(?PDO $db = null)
     {
         $this->conn = $db;
-        // Include il file con il prefisso
         $this->loadPrefix();
     }
 
-
-    // public function __construct() {
-    // }
-
-    protected function loadPrefix()
+    /**
+     * Load database table prefix if configured.
+     */
+    protected function loadPrefix(): void
     {
-        // Assicurati che il file esista
-        $prefixFile = '../core/prefix.php';
-        if (is_file($prefixFile)) {
-            require $prefixFile;
-            $this->prefix = isset($prefix) ? $prefix : '';
-        } else {
-            $this->prefix = ''; // Nessun prefisso se il file non esiste
+        $candidates = [
+            __DIR__ . '/../core/prefix.php',
+            __DIR__ . '/../../core/prefix.php',
+            'core/prefix.php',
+            '../core/prefix.php',
+        ];
+
+        foreach ($candidates as $prefixFile) {
+            if (is_file($prefixFile)) {
+                $prefix = '';
+                require $prefixFile;
+                if (!empty($prefix)) {
+                    $this->prefix = (string) $prefix;
+                    $this->prx = str_ends_with($this->prefix, '_') ? $this->prefix : $this->prefix . '_';
+                }
+                return;
+            }
+        }
+        $this->prefix = '';
+        $this->prx = '';
+    }
+
+    /**
+     * Get full table name with prefix.
+     *
+     * @param string $baseTable
+     * @return string
+     */
+    public function getTableName(string $baseTable): string
+    {
+        return $this->prx !== '' ? "{$this->prx}{$baseTable}" : $baseTable;
+    }
+
+    /**
+     * Show statement error for debugging.
+     *
+     * @param PDOStatement|null $stmt
+     */
+    public function showError(?PDOStatement $stmt = null): void
+    {
+        if ($stmt instanceof PDOStatement) {
+            echo '<pre>' . htmlspecialchars(print_r($stmt->errorInfo(), true), ENT_QUOTES, 'UTF-8') . '</pre>';
         }
     }
-
-    public function getTableName($baseTable)
-    {
-        // Ritorna il nome della tabella con prefisso
-        return $this->prefix !== '' ? "{$this->prefix}_{$baseTable}" : $baseTable;
-    }
-
-    // error->TENERE?
-    public function showError($stmt)
-    {
-        echo "<pre>";
-        print_r($stmt->errorInfo());
-        echo "</pre>";
-    }
-
 
     ///////////// INSERT
 
-    // $fields must be an array
-    function insert($fields)
+    /**
+     * Insert a new record.
+     *
+     * @param array<int, string> $fields
+     * @return bool
+     */
+    public function insert(array $fields): bool
     {
-        $i = 1;
-        
-        $this->fields = "";
-        foreach ($fields as $item) {
-            $this->fields .= "$item = :$item";
-            if ($i < count($fields)) {
-                $this->fields .= ", ";
-            }
-            $i++;
-        }
-        
-        $query = "INSERT INTO " . $this->prx . $this->table . "
-        SET " . $this->fields . "";
-
-
-
-        $stmt = $this->conn->prepare($query);
-        // echo $query . '<br>';
-
-        foreach ($fields as $item) {
-            $stmt->bindParam(":$item", $this->$item);
-            // echo $item . ' -> ' . $this->$item . '<br>';
-        }
-        
-        if ($stmt->execute()) {
-            return true;
-        } else {
+        if ($this->conn === null || empty($fields)) {
             return false;
         }
-    }
 
+        $columns = implode(', ', array_map(static fn($f) => "`" . str_replace('`', '', $f) . "`", $fields));
+        $placeholders = implode(', ', array_map(static fn($f) => ":{$f}", $fields));
+
+        $query = "INSERT INTO {$this->prx}{$this->table} ({$columns}) VALUES ({$placeholders})";
+        $stmt = $this->conn->prepare($query);
+
+        foreach ($fields as $item) {
+            $val = property_exists($this, $item) ? $this->$item : null;
+            $stmt->bindValue(":{$item}", $val);
+        }
+
+        return $stmt->execute();
+    }
 
     ///////////// UPDATE
 
-    // $fields must be an array
-    function update($fields, $where)
+    /**
+     * Update an existing record.
+     *
+     * @param array<int, string> $fields
+     * @param string $where
+     * @return bool
+     */
+    public function update(array $fields, string $where): bool
     {
-
-        $this->where = "";
-
-        $this->fields = "";
-
-        $i = 1;
-        foreach ($fields as $item) {
-            $this->fields .= "$item = :$item";
-            if ($i < count($fields)) {
-                $this->fields .= ", ";
-            }
-            $i++;
+        if ($this->conn === null || empty($fields)) {
+            return false;
         }
 
-        $query = "UPDATE " . $this->prx . $this->table . "
-        SET " . $this->fields . " WHERE $where = :$where";
+        $setParts = [];
+        foreach ($fields as $item) {
+            $setParts[] = "{$item} = :{$item}";
+        }
 
+        $query = "UPDATE {$this->prx}{$this->table} SET " . implode(', ', $setParts) . " WHERE {$where} = :where_param";
         $stmt = $this->conn->prepare($query);
 
         foreach ($fields as $item) {
-            $stmt->bindParam(":$item", $this->$item);
+            $val = property_exists($this, $item) ? $this->$item : null;
+            $stmt->bindValue(":{$item}", $val);
         }
 
-        $stmt->bindParam(":$where", $this->$where);
+        $whereVal = property_exists($this, $where) ? $this->$where : null;
+        $stmt->bindValue(':where_param', $whereVal);
 
-        if ($stmt->execute()) {
-            return true;
-        } else {
-            return false;
-        }
+        return $stmt->execute();
     }
-
-
 
     ///////////// SELECT
 
-    function showAll($orderBy, $limit = null, $offset = null, $ascDesc = "ASC")
+    /**
+     * Show all records with optional pagination and ordering.
+     *
+     * @param string $orderBy
+     * @param int|null $limit
+     * @param int|null $offset
+     * @param string $ascDesc
+     * @return PDOStatement|false
+     */
+    public function showAll(string $orderBy, ?int $limit = null, ?int $offset = null, string $ascDesc = 'ASC'): PDOStatement|false
     {
+        if ($this->conn === null) {
+            return false;
+        }
 
+        $direction = strtoupper($ascDesc) === 'DESC' ? 'DESC' : 'ASC';
         $limits = '';
 
         if ($limit !== null && $offset !== null) {
-            $limits = " LIMIT :limit OFFSET :offset";
+            $limits = ' LIMIT :limit OFFSET :offset';
+        } elseif ($limit !== null) {
+            $limits = ' LIMIT :limit';
         }
 
-        $query = "SELECT *
-            FROM " . $this->prx . $this->table . "
-        ORDER BY " . $orderBy . " " . $ascDesc . " " . $limits . "";
-
+        $query = "SELECT * FROM {$this->prx}{$this->table} ORDER BY {$orderBy} {$direction}{$limits}";
         $stmt = $this->conn->prepare($query);
-
-        if ($limit !== null && $offset !== null) {
-            $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
-            $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
-        }
-
-        $stmt->execute();
-
-        return $stmt;
-    }
-
-    // show the last n record inserted in a table
-    function showAllLimitDesc($orderBy, $limit)
-    {
-        $query = "SELECT *
-    FROM " . $this->prx . $this->table . "
-    ORDER BY " . $orderBy . " DESC LIMIT " . $limit . "";
-
-        $stmt = $this->conn->prepare($query);
-
-        $stmt->execute();
-
-        return $stmt;
-    }
-
-    // $where must be an array
-    function showAllWhere($orderBy, $where, $limit = null, $offset = null, $ascDesc = "ASC")
-    {
-
-        $this->where = "";
-
-        $i = 1;
-        foreach ($where as $item) {
-            $this->where .= "$item = :$item";
-            if ($i < count($where)) {
-                $this->where .= " AND ";
-            }
-            $i++;
-        }
-
-        $limit_query = '';
-        $offset_query = '';
 
         if ($limit !== null) {
-            $limit_query = " LIMIT :limit ";
+            $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
         }
-        if ($offset !== null) {
-            $offset_query = " OFFSET :offset";
-        }
-
-        $query = "SELECT *
-        FROM " . $this->prx . $this->table . "
-        WHERE " . $this->where . "
-        ORDER BY " . $orderBy . " " . $ascDesc . " " . $limit_query . $offset_query . "";
-
-        $stmt = $this->conn->prepare($query);
-        // print_r($stmt);
-        foreach ($where as $item) {
-            $stmt->bindParam(":$item", $this->$item);
+        if ($offset !== null && $limit !== null) {
+            $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
         }
 
-        if ($limit !== null) {
-            $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
-        }
-        if ($offset !== null) {
-            $stmt->bindParam(':offset', $offset, PDO::PARAM_INT);
-        }
-        
         $stmt->execute();
         return $stmt;
     }
 
-
-    // fields must be an array
-    function showFieldsUnion($orderBy, $table1, $table2, $fields)
+    /**
+     * Show the last n records inserted in a table.
+     *
+     * @param string $orderBy
+     * @param int $limit
+     * @return PDOStatement|false
+     */
+    public function showAllLimitDesc(string $orderBy, int $limit): PDOStatement|false
     {
-
-        $this->fields = "";
-        $i = 1;
-        foreach ($fields as $item) {
-            $this->fields .= "$item";
-            if ($i < count($fields)) {
-                $this->fields .= ", ";
-            }
-            $i++;
-        }
-
-        $query = "SELECT " . $this->fields . "
-        FROM " . $this->prx . $table1 . "
-        UNION
-        SELECT " . $this->fields . "
-        FROM " . $this->prx . $table2 . "
-        ORDER BY " . $orderBy . " ASC ";
-
-        $stmt = $this->conn->prepare($query);
-
-        $stmt->execute();
-
-        return $stmt;
-    }
-
-    // check the existence of a single record
-    public function itemExists($item)
-    {
-
-        $query = "SELECT *
-        FROM " . $this->prx . $this->table . "
-        WHERE " . $item . " = :" . $item . "
-        LIMIT 0,1";
-
-        $stmt = $this->conn->prepare($query);
-
-        $stmt->bindParam(":" . $item . "", $this->$item);
-
-        // execute the query
-        $stmt->execute();
-        
-        // get number of rows
-        $num = $stmt->rowCount();
-
-        if ($num > 0) {
-            return true;
-        } else {
+        if ($this->conn === null) {
             return false;
         }
-    }
 
-    // count how many record there are with a specific field
-    public function countItem($item)
-    {
-
-        // query to check if email exists
-        $query = "SELECT *
-        FROM " . $this->prx . $this->table . "
-        WHERE " . $item . " = :" . $item . "";
-
+        $query = "SELECT * FROM {$this->prx}{$this->table} ORDER BY {$orderBy} DESC LIMIT :limit";
         $stmt = $this->conn->prepare($query);
-
-        $stmt->bindParam(":" . $item . "", $this->$item);
-
-        // execute the query
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
         $stmt->execute();
 
-        // get number of rows
-        $num = $stmt->rowCount();
-
-        return $num;
+        return $stmt;
     }
 
-    // count all records of a table
-    public function countAll()
+    /**
+     * Select records with WHERE conditions.
+     *
+     * @param string $orderBy
+     * @param array<int, string> $where
+     * @param int|null $limit
+     * @param int|null $offset
+     * @param string $ascDesc
+     * @return PDOStatement|false
+     */
+    public function showAllWhere(string $orderBy, array $where, ?int $limit = null, ?int $offset = null, string $ascDesc = 'ASC'): PDOStatement|false
     {
-        $query = "SELECT COUNT(*) as total FROM " . $this->table . "";
+        if ($this->conn === null) {
+            return false;
+        }
+
+        $whereParts = [];
+        foreach ($where as $item) {
+            $whereParts[] = "{$item} = :{$item}";
+        }
+
+        $whereClause = !empty($whereParts) ? implode(' AND ', $whereParts) : '1=1';
+        $direction = strtoupper($ascDesc) === 'DESC' ? 'DESC' : 'ASC';
+
+        $limitClause = '';
+        if ($limit !== null && $offset !== null) {
+            $limitClause = ' LIMIT :limit OFFSET :offset';
+        } elseif ($limit !== null) {
+            $limitClause = ' LIMIT :limit';
+        }
+
+        $query = "SELECT * FROM {$this->prx}{$this->table} WHERE {$whereClause} ORDER BY {$orderBy} {$direction}{$limitClause}";
+        $stmt = $this->conn->prepare($query);
+
+        foreach ($where as $item) {
+            $val = property_exists($this, $item) ? $this->$item : null;
+            $stmt->bindValue(":{$item}", $val);
+        }
+
+        if ($limit !== null) {
+            $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        }
+        if ($offset !== null && $limit !== null) {
+            $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        }
+
+        $stmt->execute();
+        return $stmt;
+    }
+
+    /**
+     * Show fields with UNION from two tables.
+     *
+     * @param string $orderBy
+     * @param string $table1
+     * @param string $table2
+     * @param array<int, string> $fields
+     * @return PDOStatement|false
+     */
+    public function showFieldsUnion(string $orderBy, string $table1, string $table2, array $fields): PDOStatement|false
+    {
+        if ($this->conn === null || empty($fields)) {
+            return false;
+        }
+
+        $fieldList = implode(', ', $fields);
+        $query = "SELECT {$fieldList} FROM {$this->prx}{$table1} UNION SELECT {$fieldList} FROM {$this->prx}{$table2} ORDER BY {$orderBy} ASC";
+
+        $stmt = $this->conn->prepare($query);
+        $stmt->execute();
+
+        return $stmt;
+    }
+
+    /**
+     * Check the existence of a single record matching an attribute.
+     *
+     * @param string $item
+     * @return bool
+     */
+    public function itemExists(string $item): bool
+    {
+        if ($this->conn === null) {
+            return false;
+        }
+
+        $query = "SELECT 1 FROM {$this->prx}{$this->table} WHERE {$item} = :{$item} LIMIT 1";
+        $stmt = $this->conn->prepare($query);
+        $val = property_exists($this, $item) ? $this->$item : null;
+        $stmt->bindValue(":{$item}", $val);
+        $stmt->execute();
+
+        return (bool) $stmt->fetchColumn();
+    }
+
+    /**
+     * Count records matching a specific field.
+     *
+     * @param string $item
+     * @return int
+     */
+    public function countItem(string $item): int
+    {
+        if ($this->conn === null) {
+            return 0;
+        }
+
+        $query = "SELECT COUNT(*) FROM {$this->prx}{$this->table} WHERE {$item} = :{$item}";
+        $stmt = $this->conn->prepare($query);
+        $val = property_exists($this, $item) ? $this->$item : null;
+        $stmt->bindValue(":{$item}", $val);
+        $stmt->execute();
+
+        return (int) $stmt->fetchColumn();
+    }
+
+    /**
+     * Count all records of a table.
+     *
+     * @return int
+     */
+    public function countAll(): int
+    {
+        if ($this->conn === null) {
+            return 0;
+        }
+
+        $query = "SELECT COUNT(*) as total FROM {$this->prx}{$this->table}";
         $stmt = $this->conn->prepare($query);
         $stmt->execute();
         $result = $stmt->fetch(PDO::FETCH_ASSOC);
-        return $result['total'];
-    }
 
+        return isset($result['total']) ? (int) $result['total'] : 0;
+    }
 
     ///////////// DELETE
 
-    function delete($field)
+    /**
+     * Delete record by field match.
+     *
+     * @param string $field
+     * @return bool
+     */
+    public function delete(string $field): bool
     {
-
-        $query = "DELETE FROM " . $this->prx . $this->table . " WHERE " . $field . " = :" . $field . "";
-
-        $stmt = $this->conn->prepare($query);
-        $stmt->bindParam(":$field", $this->$field);
-        
-        if ($stmt->execute()) {
-            return true;
-        } else {
+        if ($this->conn === null) {
             return false;
         }
+
+        $query = "DELETE FROM {$this->prx}{$this->table} WHERE {$field} = :{$field}";
+        $stmt = $this->conn->prepare($query);
+        $val = property_exists($this, $field) ? $this->$field : null;
+        $stmt->bindValue(":{$field}", $val);
+
+        return $stmt->execute();
     }
 
+    ///////////// OPERATIONS ON TABLES
 
-    /////////////   OPERATIONS ON TABLES
-
-    function dropTable($tableToDel)
+    /**
+     * Drop a table.
+     *
+     * @param string $tableToDel
+     * @return bool
+     */
+    public function dropTable(string $tableToDel): bool
     {
-
-        $query = "DROP TABLE " . $tableToDel . "";
-
-        $stmt = $this->conn->prepare($query);
-
-        if ($stmt->execute()) {
-            return true;
-        } else {
+        if ($this->conn === null) {
             return false;
         }
-    }
 
-    function cloneTable($origTable, $newTable, $primaryKey)
-    {
-
-        $query = "CREATE TABLE " . $newTable . " AS SELECT * FROM " . $origTable . "; ALTER TABLE " . $newTable . " ADD PRIMARY KEY (" . $primaryKey . ");";
-
+        $cleanTable = preg_replace('/[^a-zA-Z0-9_]/', '', $tableToDel);
+        $query = "DROP TABLE IF EXISTS `{$cleanTable}`";
         $stmt = $this->conn->prepare($query);
 
-        if ($stmt->execute()) {
-            return true;
-        } else {
-            return false;
-        }
+        return $stmt->execute();
     }
 
-
-    /////////////   OPERATIONS ON FILES
-
-    public function chmod_R($path, $filemode)
+    /**
+     * Clone a table structure and data.
+     *
+     * @param string $origTable
+     * @param string $newTable
+     * @param string $primaryKey
+     * @return bool
+     */
+    public function cloneTable(string $origTable, string $newTable, string $primaryKey): bool
     {
-        // Usa DIRECTORY_SEPARATOR per compatibilità tra sistemi operativi
+        if ($this->conn === null) {
+            return false;
+        }
+
+        $orig = preg_replace('/[^a-zA-Z0-9_]/', '', $origTable);
+        $new = preg_replace('/[^a-zA-Z0-9_]/', '', $newTable);
+        $pk = preg_replace('/[^a-zA-Z0-9_]/', '', $primaryKey);
+
+        $query = "CREATE TABLE `{$new}` AS SELECT * FROM `{$orig}`; ALTER TABLE `{$new}` ADD PRIMARY KEY (`{$pk}`);";
+        $stmt = $this->conn->prepare($query);
+
+        return $stmt->execute();
+    }
+
+    ///////////// OPERATIONS ON FILES
+
+    /**
+     * Recursive chmod.
+     *
+     * @param string $path
+     * @param int $filemode
+     * @return bool
+     */
+    public function chmod_R(string $path, int $filemode): bool
+    {
+        if (!file_exists($path)) {
+            return false;
+        }
+
         if (!is_dir($path)) {
-            return chmod($path, $filemode);
+            return @chmod($path, $filemode);
         }
 
-        // Apri la directory
-        $dh = opendir($path);
+        $dh = @opendir($path);
         if (!$dh) {
-            return false; // Fallisce se non può aprire la directory
+            return false;
         }
 
-        // Scansiona la directory
         while (($file = readdir($dh)) !== false) {
-            if ($file == '.' || $file == '..') {
-                continue; // Salta directory correnti e parenti
+            if ($file === '.' || $file === '..') {
+                continue;
             }
 
             $fullpath = $path . DIRECTORY_SEPARATOR . $file;
-
             if (is_dir($fullpath)) {
-                // Ricorsione per le directory
                 if (!$this->chmod_R($fullpath, $filemode)) {
-                    closedir($dh); // Chiudi in caso di errore
+                    closedir($dh);
                     return false;
                 }
             } else {
-                // Imposta i permessi sul file
-                if (!chmod($fullpath, $filemode)) {
-                    closedir($dh); // Chiudi in caso di errore
+                if (!@chmod($fullpath, $filemode)) {
+                    closedir($dh);
                     return false;
                 }
             }
         }
 
-        // Chiudi la directory
         closedir($dh);
-
-        // Imposta i permessi sulla directory stessa
-        if (!chmod($path, $filemode)) {
-            return false;
-        }
-
-        return true; // Successo
+        return @chmod($path, $filemode);
     }
 
-
-    public function copyDirectory($source, $destination)
+    /**
+     * Recursively copy a directory.
+     *
+     * @param string $source
+     * @param string $destination
+     * @return bool
+     */
+    public function copyDirectory(string $source, string $destination): bool
     {
         if (!is_dir($source)) {
-            echo "Source folder not found: $source\n";
             return false;
         }
 
-        if (!is_dir($destination)) {
-            if (!mkdir($destination, 0755, true)) {
-                echo "Failed to create destination: $destination\n";
-                return false;
-            }
+        if (!is_dir($destination) && !mkdir($destination, 0755, true) && !is_dir($destination)) {
+            return false;
         }
 
         $files = scandir($source);
-        foreach ($files as $file) {
-            if ($file !== '.' && $file !== '..') {
-                $src = rtrim($source, '/') . '/' . $file;
-                $dest = rtrim($destination, '/') . '/' . $file;
+        if ($files === false) {
+            return false;
+        }
 
-                if (is_dir($src)) {
-                    $this->copyDirectory($src, $dest);
-                } else {
-                    if (!copy($src, $dest)) {
-                        echo "Failed to copy file: $src\n";
-                    }
-                }
+        foreach ($files as $file) {
+            if ($file === '.' || $file === '..') {
+                continue;
+            }
+
+            $src = rtrim($source, '/\\') . DIRECTORY_SEPARATOR . $file;
+            $dest = rtrim($destination, '/\\') . DIRECTORY_SEPARATOR . $file;
+
+            if (is_dir($src)) {
+                $this->copyDirectory($src, $dest);
+            } else {
+                copy($src, $dest);
             }
         }
 
         return true;
     }
 
-
-    public function rmdir_recursive($dir)
+    /**
+     * Recursively remove a directory.
+     *
+     * @param string $dir
+     * @return bool
+     */
+    public function rmdir_recursive(string $dir): bool
     {
-        foreach (scandir($dir) as $file) {
-            if ('.' === $file || '..' === $file) continue;
-            if (is_dir($dir . '/' . $file)) $this->rmdir_recursive($dir . '/' . $file);
-            else unlink($dir . '/' . $file);
+        if (!is_dir($dir)) {
+            return false;
         }
-        rmdir($dir);
+
+        $files = scandir($dir);
+        if ($files === false) {
+            return false;
+        }
+
+        foreach ($files as $file) {
+            if ($file === '.' || $file === '..') {
+                continue;
+            }
+
+            $target = $dir . DIRECTORY_SEPARATOR . $file;
+            if (is_dir($target)) {
+                $this->rmdir_recursive($target);
+            } else {
+                @unlink($target);
+            }
+        }
+
+        return @rmdir($dir);
     }
 
+    ///////////// MISC
 
-    /////////////   MISC
-
-
-    public function commaToPoint($number)
+    public function commaToPoint(float|int|string $number): string
     {
-        return str_replace(',', '.', $number);
+        return str_replace(',', '.', (string) $number);
     }
 
-    public function pointToComma($number)
+    public function pointToComma(float|int|string $number): string
     {
-        return str_replace('.', ',', $number);
-    }
-    public function getBaseUrlBefore($stopDir = 'admin') {
-    // Determina il protocollo (http o https)
-    $protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' 
-                || $_SERVER['SERVER_PORT'] == 443) ? "https://" : "http://";
-
-    // Host, es: boots.local
-    $host = $_SERVER['HTTP_HOST'];
-
-    // URI della richiesta, es: /damares/admin/core/tinyfilemanager.php?lang=en
-    $uri = $_SERVER['REQUEST_URI'];
-
-    // Rimuove la query string (tutto dopo il ?)
-    $uri = parse_url($uri, PHP_URL_PATH);
-
-    // Divide il path in segmenti
-    $segments = explode('/', trim($uri, '/'));
-
-    // Ricostruisce il path fino alla directory specificata (esclusa)
-    $basePath = '';
-    foreach ($segments as $segment) {
-        if ($segment === $stopDir) break;
-        $basePath .= $segment . '/';
+        return str_replace('.', ',', (string) $number);
     }
 
-    return $protocol . $host . '/' . $basePath;
-}
+    /**
+     * Get base URL up to specified stopping directory.
+     *
+     * @param string $stopDir
+     * @return string
+     */
+    public function getBaseUrlBefore(string $stopDir = 'admin'): string
+    {
+        $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+            || (isset($_SERVER['SERVER_PORT']) && (int) $_SERVER['SERVER_PORT'] === 443);
+        $protocol = $isHttps ? 'https://' : 'http://';
 
+        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+        $uri = $_SERVER['REQUEST_URI'] ?? '/';
+
+        $path = parse_url($uri, PHP_URL_PATH) ?? '/';
+        $segments = explode('/', trim($path, '/'));
+
+        $basePath = '';
+        foreach ($segments as $segment) {
+            if ($segment === $stopDir) {
+                break;
+            }
+            $basePath .= $segment . '/';
+        }
+
+        return $protocol . $host . '/' . $basePath;
+    }
 }

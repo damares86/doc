@@ -1,123 +1,121 @@
 <?php
-require "admin/core/prefix.php";
-require "admin/inc/damares_version.php";
 
-spl_autoload_register('autoloader');
+declare(strict_types=1);
 
-function autoloader($class)
-{
-  include("admin/class/$class.php");
+require_once __DIR__ . '/../admin/core/prefix.php';
+require_once __DIR__ . '/../admin/inc/damares_version.php';
+
+spl_autoload_register(static function (string $class): void {
+    $file = __DIR__ . "/../admin/class/{$class}.php";
+    if (is_file($file)) {
+        require_once $file;
+    }
+});
+
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
 }
-
-session_start();
 
 $database = new Database();
 $db = $database->getConnection();
 
-// recall of all the classes
-$files = glob("admin/class/*.php", GLOB_BRACE);
-rsort($files);
+$account = new Account($db);
+$accountroles = new AccountRoles($db);
+$auth = new Auth($db);
+$common = new Common($db);
+$doc = new Doc($db);
+$file = new File($db);
+$home = new Home($db);
+$plugin = new Plugin($db);
+$role = new Role($db);
+$rolessection = new RolesSection($db);
+$section = new Section($db);
+$setting = new Setting($db);
 
-// creation of the file with all the initialization of the classes
-if (!is_file('admin/inc/class_initialize.php')) {
-  $file_handle = fopen('admin/inc/class_initialize.php', 'w');
-  fwrite($file_handle, '<?php');
-  fwrite($file_handle, "\n");
-  foreach ($files as $filename) {
-    $nomefile = pathinfo($filename);
-    $file = $nomefile['filename'];
-    $file_var = strtolower($file);
-    fwrite($file_handle, '$' . $file_var . ' = new ' . $file . '($db);');
-    fwrite($file_handle, "\n");
-  }
-  if ($prefix) {
-    fwrite($file_handle, '$common->prx = "' . $prefix . '_";');
-    fwrite($file_handle, "\n");
-    }
-    fwrite($file_handle, "?>");
-    chmod('admin/inc/class_initialize.php', 0777);
-    }
-    include "admin/inc/class_initialize.php";
-    
+$prx = !empty($prefix) ? $prefix . '_' : '';
+$account->prx = $prx;
+$accountroles->prx = $prx;
+$auth->prx = $prx;
+$common->prx = $prx;
+$doc->prx = $prx;
+$file->prx = $prx;
+$home->prx = $prx;
+$plugin->prx = $prx;
+$role->prx = $prx;
+$rolessection->prx = $prx;
+$section->prx = $prx;
+$setting->prx = $prx;
+
 $adminUser = 0;
-// check if the user is logged
+
+// Check if user is logged in via cookie
 if (isset($_COOKIE['damares-login'])) {
-  $pieces = explode(",", $_COOKIE['damares-login']);
-  $auth->id = $pieces[0];
-  $id = $pieces[0];
-  $auth->auth_token = $pieces[1];
-  if ($auth->checkCookie() > 0) {
+    $cookieVal = (string) $_COOKIE['damares-login'];
+    $pieces = explode(',', $cookieVal);
+    if (count($pieces) >= 2) {
+        $authId = (int) $pieces[0];
+        $authToken = (string) $pieces[1];
 
-    
-    $accountroles->account_id = $id;
+        $auth->id = $authId;
+        $auth->auth_token = $authToken;
 
-    $account->id = $id;
+        if ($auth->checkCookie() > 0) {
+            $accountroles->account_id = $authId;
+            $account->id = $authId;
 
-    $stmt = $account->showAllWhere('id', ['id']);
-    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            $stmt = $account->showAllWhere('id', ['id']);
+            $row = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : null;
 
-    $role_id = $accountroles->showAccountRolesId();
-    $role->id = $role_id;
+            $role_id = (int) $accountroles->showAccountRolesId();
+            $role->id = $role_id;
 
-    // set session data
-    $_SESSION['loggedin'] = true;
-    $_SESSION['account_id'] = $row['id'];
-    $_SESSION['internal'] = 1;
-    $_SESSION['role_id'] = $role_id;
-    $_SESSION['rolename'] = $role->showRolenameById();
-    $_SESSION['username'] = $row['username'];
-    $_SESSION['avatar'] = $row['avatar'];
+            $_SESSION['loggedin'] = true;
+            $_SESSION['account_id'] = $authId;
+            $_SESSION['internal'] = 1;
+            $_SESSION['role_id'] = $role_id;
+            $_SESSION['rolename'] = (string) $role->showRolenameById();
+            $_SESSION['username'] = (string) ($row['username'] ?? '');
+            $_SESSION['avatar'] = (string) ($row['avatar'] ?? 'default.png');
 
-    // update the login log time
-    $time = date("Y-m-d G:i:s");
-    $auth->updateLog($time);
-
-    $adminUser = 1;
-  }
+            $auth->updateLog(date('Y-m-d H:i:s'));
+            $adminUser = 1;
+        }
+    }
 }
 
-
-// check if the debug mode is active
-$setting->name = "debug";
+// Debug mode check
+$setting->name = 'debug';
 $dbg = $setting->showAllWhere('id', ['name']);
-$row_debug = $dbg->fetch(PDO::FETCH_ASSOC);
-extract($row_debug);
-
-if ($row_debug['value'] == 1) {
-  require 'admin/vendor/autoload.php';        // If installed via composer
-  $debug = new \bdk\Debug(array(
-    'collect' => true,
-    'output' => true,
-  ));
+$rowDebug = $dbg ? $dbg->fetch(PDO::FETCH_ASSOC) : null;
+if (($rowDebug['value'] ?? '0') === '1' && is_file(__DIR__ . '/../admin/vendor/autoload.php')) {
+    require_once __DIR__ . '/../admin/vendor/autoload.php';
+    if (class_exists('\bdk\Debug')) {
+        new \bdk\Debug(['collect' => true, 'output' => true]);
+    }
 }
 
-
-// check the language set
-$setting->name = "lang";
-$stmt = $setting->showByName();
-$lang = $stmt['value'];
+// Locale loading
+$setting->name = 'lang';
+$stmtLang = $setting->showByName();
+$lang = is_array($stmtLang) && !empty($stmtLang['value']) ? (string) $stmtLang['value'] : 'it';
 $_SESSION['lang'] = $lang;
 
-foreach (glob("admin/locale/$lang/*.php") as $row) {
-  require "$row";
+$localeFiles = glob(__DIR__ . "/../admin/locale/{$lang}/*.php") ?: [];
+foreach ($localeFiles as $locFile) {
+    require_once $locFile;
 }
-
 ?>
-
 <!DOCTYPE html>
-<html lang="en">
+<html lang="<?= htmlspecialchars($lang, ENT_QUOTES, 'UTF-8') ?>">
 
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Agnelli Manager">
+  <meta name="description" content="Studio Medico Dott.ssa Maria Chiara Crosetto">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <!-- The above 4 meta tags *must* come first in the head; any other head content must come *after* these tags -->
-
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
 
-  <!-- Title -->
   <title>Dottoressa Crosetto Maria Chiara - Giaveno</title>
 
   <!-- Favicon -->
@@ -129,46 +127,21 @@ foreach (glob("admin/locale/$lang/*.php") as $row) {
 
   <!-- Web App Manifest -->
   <link rel="manifest" href="manifest.json">
-  <!-- Bootstrap 5.3 -->
-  <!--<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">-->
   <script src="https://cdn.cookie-script.com/s/e351f680b4229f9cc2448b88296e0bf2.js"></script>
-  <!-- DataTables -->
   <link href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css" rel="stylesheet">
 
   <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
   <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-
 </head>
 
 <body>
-  <!-- Preloader -->
-  <!--<div id="preloader">
-    <div class="spinner-grow text-primary" role="status">
-      <span class="visually-hidden">Loading...</span>
-    </div>
-  </div>-->
-
   <!-- Header Area -->
   <div class="header-area" id="headerArea">
     <div class="container">
-      <!-- Header Content -->
       <div class="header-content header-style-five position-relative p-2 align-items-center justify-content-between">
-        <!-- Logo Wrapper -->
         <div class="logo-wrapper text-center">
           <a href="index.php">Dott.ssa Maria Chiara Crosetto</a>
-<!--           <a href="index.php">
-            <img class="logo-light" src="admin/assets/images/logo/dmweblab_logo.png" alt="">
-            <img class="logo-dark" src="admin/assets/images/logo/dmweblab_logo.png" alt="">
-          </a> -->
         </div>
-
-        <!-- Navbar Toggler -->
-      <!--   <div class="navbar-toggler" id="affanNavbarToggler" data-bs-toggle="offcanvas" data-bs-target="#affanOffcanvas"
-          aria-controls="affanOffcanvas">
-          <span class="d-block"></span>
-          <span class="d-block"></span>
-          <span class="d-block"></span>
-        </div> -->
       </div>
     </div>
   </div>

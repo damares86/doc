@@ -1,33 +1,37 @@
 <?php
 
-require __DIR__ . "/coreConfig.php";
+declare(strict_types=1);
 
-header('Content-Type: application/json');
-file_put_contents("debug.log", print_r($_POST, true));
+require __DIR__ . '/coreConfig.php';
 
-$title = $_POST['title'] ?? null;
-$start = $_POST['start'] ?? null;
-$end   = $_POST['end'] ?? null;
-$url   = $_POST['url'] ?? null;
-$url   = $_POST['note'] ?? null;
-$color = $_POST['calendar_color'] ?? '1';
+header('Content-Type: application/json; charset=utf-8');
+
+$title = filter_input(INPUT_POST, 'title', FILTER_DEFAULT);
+$start = filter_input(INPUT_POST, 'start', FILTER_DEFAULT);
+$end   = filter_input(INPUT_POST, 'end', FILTER_DEFAULT);
+$url   = filter_input(INPUT_POST, 'url', FILTER_DEFAULT);
+$note  = filter_input(INPUT_POST, 'note', FILTER_DEFAULT);
+$color = filter_input(INPUT_POST, 'calendar_color', FILTER_DEFAULT) ?? '1';
 
 if (!$title || !$start || !$end) {
-    echo json_encode(["success" => false, "error" => "Campi obbligatori mancanti"]);
+    echo json_encode(['success' => false, 'error' => 'Missing required fields']);
     exit;
 }
 
+$prx = $prx ?? '';
+
 try {
-    $stmt = $db->prepare("INSERT INTO calendar_events (title, start, end, url, cat_id) VALUES (:title, :start, :end, :url, :cat_id)");
+    $stmt = $db->prepare("INSERT INTO {$prx}calendar_events (`title`, `start`, `end`, `note`, `url`, `cat_id`) VALUES (:title, :start, :end, :note, :url, :cat_id)");
     $stmt->execute([
         ':title' => $title,
         ':start' => $start,
         ':end'   => $end,
+        ':note'  => $note,
         ':url'   => $url,
-        ':cat_id' => $color
+        ':cat_id' => $color,
     ]);
 
-    echo json_encode(["success" => true, "id" => $db->lastInsertId()]);
+    echo json_encode(['success' => true, 'id' => $db->lastInsertId()]);
 } catch (PDOException $e) {
-    echo json_encode(["success" => false, "error" => $e->getMessage()]);
+    echo json_encode(['success' => false, 'error' => $e->getMessage()]);
 }

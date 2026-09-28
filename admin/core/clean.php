@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 ##############    Damares    ###############
 #                                          #
 #    A backend project by DM WebLab        #
@@ -8,60 +10,74 @@
 #                                          #
 ############################################
 
-
-if(session_status() == PHP_SESSION_ACTIVE){
-  session_destroy();
- }
- 
- if(is_file("../class/Database.php")){
- 
- include ("../class/Database.php");
- $database=new Database();
- $db = $database->getConnection();
-
- $prx="";
- if(is_file("prefix.php")){
-  require "prefix.php";
-  $prx=$prefix;
- }
-
- 
- $query = "DROP TABLE IF EXISTS `".$prx."accountsRoles`, `".$prx."accounts`,  `".$prx."files`, `".$prx."home`, `".$prx."password_reset_temp`, `".$prx."plugins`, `".$prx."roles`, `".$prx."rolesSection`, `".$prx."rolesSectionChild`, `".$prx."sectionChild`, `".$prx."sectionParent`, `".$prx."settings`,`".$prx."register_account_temp`";
-
- 
- $stmt = $database->conn->prepare($query);
- 
- $stmt->execute();
- }
-
-
-$exclude_arr=array("default","Program","sd");
-
-foreach (glob("../uploads/avatar/*") as $row){
-    $file = pathinfo($row);
-    $filename = $file['filename'];
-  if(!in_array($filename,$exclude_arr)){
-    unlink($row);
-  }
+if (session_status() === PHP_SESSION_ACTIVE) {
+    session_destroy();
 }
 
-foreach (glob("../uploads/*") as $row){
-    $file = pathinfo($row);
-    $filename = $file['filename'];
-    if(!in_array($filename,$exclude_arr)){
-      unlink($row);
+if (is_file(__DIR__ . '/../class/Database.php')) {
+    require_once __DIR__ . '/../class/Database.php';
+    $database = new Database();
+    $db = $database->getConnection();
+
+    $prx = '';
+    if (is_file(__DIR__ . '/prefix.php')) {
+        $prefix = '';
+        require __DIR__ . '/prefix.php';
+        $prx = $prefix;
     }
-  }
 
-unlink("../class/Database.php");
-if(is_file("site.php")){
-  unlink("site.php");
+    if ($db) {
+        $tables = [
+            "{$prx}accounts_roles",
+            "{$prx}accounts",
+            "{$prx}files",
+            "{$prx}home",
+            "{$prx}password_reset_temp",
+            "{$prx}plugins",
+            "{$prx}roles",
+            "{$prx}roles_section",
+            "{$prx}roles_section_child",
+            "{$prx}section_child",
+            "{$prx}section_parent",
+            "{$prx}settings",
+            "{$prx}register_account_temp",
+            "{$prx}verify",
+        ];
+        $escaped = implode(', ', array_map(static fn($t) => "`" . str_replace('`', '', $t) . "`", $tables));
+        $db->exec("DROP TABLE IF EXISTS {$escaped}");
+    }
 }
-if(is_file("prefix.php")){
-  unlink("prefix.php");
- }
-unlink("../inc/class_initialize.php");
 
+$excludeArr = ['default', 'default.png', 'Program', 'sd', 'sd.png', '.gitkeep'];
 
-header("Location: ../");
+$avatarFiles = glob(__DIR__ . '/../uploads/avatar/*') ?: [];
+foreach ($avatarFiles as $aFile) {
+    $info = pathinfo($aFile);
+    if (!in_array($info['basename'], $excludeArr, true) && !in_array($info['filename'], $excludeArr, true)) {
+        @unlink($aFile);
+    }
+}
+
+$uploadFiles = glob(__DIR__ . '/../uploads/*') ?: [];
+foreach ($uploadFiles as $uFile) {
+    if (is_file($uFile)) {
+        $info = pathinfo($uFile);
+        if (!in_array($info['basename'], $excludeArr, true) && !in_array($info['filename'], $excludeArr, true)) {
+            @unlink($uFile);
+        }
+    }
+}
+
+@unlink(__DIR__ . '/../class/Database.php');
+if (is_file(__DIR__ . '/site.php')) {
+    @unlink(__DIR__ . '/site.php');
+}
+if (is_file(__DIR__ . '/prefix.php')) {
+    @unlink(__DIR__ . '/prefix.php');
+}
+if (is_file(__DIR__ . '/../inc/class_initialize.php')) {
+    @unlink(__DIR__ . '/../inc/class_initialize.php');
+}
+
+header('Location: ../');
 exit;
