@@ -55,11 +55,38 @@ $home = new Home($db);
 $rolessection = new RolesSection($db);
 $accountroles = new AccountRoles($db);
 
+$prx = !empty($prefix) ? $prefix . '_' : '';
+$common->prx = $prx;
+$account->prx = $prx;
+$auth->prx = $prx;
+$role->prx = $prx;
+$setting->prx = $prx;
+$section->prx = $prx;
+$file->prx = $prx;
+$plugin->prx = $prx;
+$home->prx = $prx;
+$rolessection->prx = $prx;
+$accountroles->prx = $prx;
+
+// Auto-instantiate any additional classes found in admin/class/ (e.g. Doc, etc.)
+$extraClasses = glob(__DIR__ . '/../class/*.php') ?: [];
+foreach ($extraClasses as $cPath) {
+    $cName = pathinfo($cPath, PATHINFO_FILENAME);
+    $varName = strtolower($cName);
+    if (!isset($$varName) && class_exists($cName)) {
+        $$varName = new $cName($db);
+        if (isset($$varName->prx)) {
+            $$varName->prx = $prx;
+        }
+    }
+}
+
 // Fallback initialization file
 if (is_file(__DIR__ . '/../inc/class_initialize.php')) {
     include_once __DIR__ . '/../inc/class_initialize.php';
 }
 
+// Debug configuration
 $setting->name = 'debug';
 $dbg = $setting->showAllWhere('id', ['name']);
 $row_debug = $dbg ? $dbg->fetch(PDO::FETCH_ASSOC) : null;

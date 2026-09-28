@@ -2,6 +2,13 @@
 
 declare(strict_types=1);
 
+if (!isset($doc) || !($doc instanceof Doc)) {
+    $doc = new Doc($db);
+    if (!empty($prefix)) {
+        $doc->prx = $prefix . '_';
+    }
+}
+
 $doc->table = 'doc_messages';
 $stmtMsg = $doc->showAll('id');
 $rowMsg = $stmtMsg ? $stmtMsg->fetch(PDO::FETCH_ASSOC) : [];
