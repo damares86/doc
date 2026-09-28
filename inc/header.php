@@ -9,6 +9,8 @@ function autoloader($class)
   include("admin/class/$class.php");
 }
 
+session_start();
+
 $database = new Database();
 $db = $database->getConnection();
 
@@ -46,7 +48,7 @@ if (isset($_COOKIE['damares-login'])) {
   $auth->auth_token = $pieces[1];
   if ($auth->checkCookie() > 0) {
 
-    session_start();
+    
     $accountroles->account_id = $id;
 
     $account->id = $id;
