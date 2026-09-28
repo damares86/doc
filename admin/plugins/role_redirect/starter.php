@@ -1,77 +1,72 @@
 <?php
 
-// here it's possibile to add some extra operations for the installation
+declare(strict_types=1);
 
-if ($op == 'add') {
-
-    // operations during the installation
+if (($op ?? '') === 'add') {
     $setting->name = 'role_redirect';
-    $setting->value = 1;
+    $setting->value = '1';
+
     if ($setting->updateValue()) {
-
         $error = 0;
-        // copy
-        if (copy("$path/locale/en/redirect_en.php", "../locale/en/redirect_en.php")) {
-            chmod("../locale/en/redirect_en.php", 0755);
-        } else {
-            $error++;
-            echo "$dest_file -> $error<br>";
+        $path = $path ?? __DIR__;
+
+        if (is_file("{$path}/locale/en/redirect_en.php")) {
+            if (!@copy("{$path}/locale/en/redirect_en.php", '../locale/en/redirect_en.php')) {
+                $error++;
+            }
         }
 
-        if (copy("$path/locale/it/redirect_it.php", "../locale/it/redirect_it.php")) {
-            chmod("../locale/en/redirect_en.php", 0755);
-        } else {
-            $error++;
-            echo "$dest_file -> $error<br>";
+        if (is_file("{$path}/locale/it/redirect_it.php")) {
+            if (!@copy("{$path}/locale/it/redirect_it.php", '../locale/it/redirect_it.php')) {
+                $error++;
+            }
         }
-        $plugin->id = $idPlugin;
+
+        $plugin->id = (int) ($idPlugin ?? 0);
         $plugin->installed = 1;
         $plugin->active = 1;
         $plugin->update(['installed', 'active'], 'id');
 
-        $error_msg = "";
-        if ($error == 0) {
-            header("Location: ../index.php?p=allPlugins&msg=pluginAdd");
-            exit;
+        if ($error === 0) {
+            header('Location: ../index.php?p=allPlugins&msg=pluginAdd');
         } else {
-            header("Location: ../index.php?p=allPlugins&err=pluginAddErr");
-            exit;
+            header('Location: ../index.php?p=allPlugins&err=pluginAddErr');
         }
-    } else {
-        header("Location: ../index.php?p=allPlugins&err=pluginAddErr");
         exit;
     }
-} else if ($op == 'rm') {
 
-    // operations during the remove
+    header('Location: ../index.php?p=allPlugins&err=pluginAddErr');
+    exit;
+}
+
+if (($op ?? '') === 'rm') {
     $setting->name = 'role_redirect';
-    $setting->value = 0;
+    $setting->value = '0';
+
     if ($setting->updateValue()) {
-
         $error = 0;
-        // copy
-        if (!unlink("../locale/en/redirect_en.php")) {
-            $error++;
+        if (is_file('../locale/en/redirect_en.php')) {
+            @unlink('../locale/en/redirect_en.php');
         }
-        if (!unlink("../locale/it/redirect_it.php")) {
-            $error++;
+        if (is_file('../locale/it/redirect_it.php')) {
+            @unlink('../locale/it/redirect_it.php');
         }
 
-        $plugin->id = $idPlugin;
+        $plugin->id = (int) ($idPlugin ?? 0);
         $plugin->installed = 0;
         $plugin->active = 0;
         $plugin->update(['installed', 'active'], 'id');
-        if ($error == 0) {
-            header("Location: ../index.php?p=allPlugins&msg=pluginRm");
-            exit;
+
+        if ($error === 0) {
+            header('Location: ../index.php?p=allPlugins&msg=pluginRm');
         } else {
-            header("Location: ../index.php?p=allPlugins&err=pluginRmErr");
-            exit;
+            header('Location: ../index.php?p=allPlugins&err=pluginRmErr');
         }
-    } else {
-        header("Location: ../index.php?p=allPlugins&err=pluginRmErr");
         exit;
     }
+
+    header('Location: ../index.php?p=allPlugins&err=pluginRmErr');
+    exit;
 }
 
-require "config.php";
+require_once __DIR__ . '/config.php';

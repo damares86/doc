@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 ##############    Damares    ###############
 #                                          #
 #    A backend project by DM WebLab        #
@@ -10,80 +12,71 @@
 
 class Mc extends Common
 {
+    public string $table = 'mc_pages';
+    public ?string $page_name = null;
+    public int|string|null $no_del = 0;
+    public ?string $link_to_file = null;
+    public ?string $layout = null;
+    public int|string|null $header = null;
+    public ?string $header_media = null;
+    public int|string|null $use_page_name = 0;
+    public int|string|null $use_name = 0;
+    public int|string|null $use_desc = 0;
+    public int|string|null $counter = null;
+    public ?string $color = null;
+    public ?string $quote = null;
+    public ?string $author = null;
+    public ?string $title = null;
+    public ?string $content = null;
+    public int|string|null $page_id = null;
+    public int|string|null $popup_cat_id = null;
+    public ?string $category = null;
+    public ?string $name = null;
+    public ?string $value = null;
+    public ?string $label = null;
+    public ?string $email = null;
+    public ?string $gallery_name = null;
+    public ?string $filename = null;
+    public ?string $path = null;
+    public ?string $origin = null;
+    public ?string $inputFileName = null;
+    public ?string $operation = null;
 
-    public $page_name;
-    public $no_del;
-    public $link_to_file;
-    public $layout;
-    public $header;
-    public $header_media;
-    public $use_page_name;
-    public $use_name;
-    public $use_desc;
-    public $counter;
-    public $color;
-    public $quote;
-    public $author;
-    public $title;
-    public $content;
-    public $page_id;
-    public $popup_cat_id;
-    public $category;
-    public $name;
-    public $value;
-    public $label;
-    public $email;
-    public $gallery_name;
-    public $filename;
-    public $path;
-    public $origin;
-    public $inputFileName;
-    public $operation;
-
-    public function uploadFile()
+    /**
+     * Upload file with security checks.
+     *
+     * @return bool
+     */
+    public function uploadFile(): bool
     {
-
-        if ($this->filename) {
-            $target_directory = $this->path;
-            $target_file = $target_directory . $this->filename;
-            
-            $file_type = pathinfo($target_file, PATHINFO_EXTENSION);
-            $file_upload_error_messages = "";
-
-            $allowed_file_types = array("png", "jpg", "jpeg", "JPG", "gif", "pdf", "doc", "docx", "zip", "mp3");
-            if (!in_array($file_type, $allowed_file_types)) {
-                header("Location: ../index.php?p=" . $this->origin . "&err=formatErr");
-                exit;
-            }
-
-            if (file_exists($target_file)) {
-                rename($target_file, $target_file . '_old');
-                // $file_upload_error_messages.="File already exists";
-            }
-
-            // make sure the 'uploads' folder exists
-            // if not, create it
-            if (!is_dir($target_directory)) {
-                $oldmask = umask(0);
-                mkdir($target_directory, 0777, true);
-                umask($oldmask);
-            } else {
-                $oldmask = umask(0);
-                chmod($target_directory, 0777);
-                umask($oldmask);
-            }
-
-            // the physical file on a temporary uploads directory on the server
-            $file = $this->inputFileName;
-
-            if (move_uploaded_file($file, $target_file)) {
-                chmod($target_file,0777);
-                return true;
-            } else {
-                return false;
-            }
-        } else {
+        if (empty($this->filename) || empty($this->path) || empty($this->inputFileName)) {
             return false;
         }
+
+        $targetDirectory = rtrim($this->path, '/\\') . DIRECTORY_SEPARATOR;
+        $targetFile = $targetDirectory . basename($this->filename);
+        $fileType = strtolower((string) pathinfo($targetFile, PATHINFO_EXTENSION));
+
+        $allowedFileTypes = ['png', 'jpg', 'jpeg', 'gif', 'pdf', 'doc', 'docx', 'zip', 'mp3', 'svg', 'webp'];
+        if (!in_array($fileType, $allowedFileTypes, true)) {
+            $origin = !empty($this->origin) ? $this->origin : 'allPages';
+            header('Location: ../index.php?p=' . urlencode($origin) . '&err=formatErr');
+            exit;
+        }
+
+        if (file_exists($targetFile)) {
+            @rename($targetFile, $targetFile . '_old');
+        }
+
+        if (!is_dir($targetDirectory)) {
+            @mkdir($targetDirectory, 0755, true);
+        }
+
+        if (is_uploaded_file($this->inputFileName) && move_uploaded_file($this->inputFileName, $targetFile)) {
+            @chmod($targetFile, 0644);
+            return true;
+        }
+
+        return false;
     }
 }

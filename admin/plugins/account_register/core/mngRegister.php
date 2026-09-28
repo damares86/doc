@@ -1,5 +1,6 @@
 <?php
 
+declare(strict_types=1);
 
 ##############    Damares    ###############
 #                                          #
@@ -9,175 +10,155 @@
 #                                          #
 ############################################
 
-require '../vendor/autoload.php';		// If installed via composer
-$debug = new \bdk\Debug(array(
-	'collect' => true,
-	'output' => true,
-));
-
-spl_autoload_register('autoloader');
-
-function autoloader($class){
-	include("../class/$class.php");
+$vendorAutoload = __DIR__ . '/../../../vendor/autoload.php';
+if (is_file($vendorAutoload)) {
+    require_once $vendorAutoload;
 }
+
+spl_autoload_register(static function (string $class): void {
+    $candidates = [
+        __DIR__ . "/../../class/{$class}.php",
+        __DIR__ . "/../class/{$class}.php",
+        __DIR__ . "/../../../class/{$class}.php",
+    ];
+    foreach ($candidates as $file) {
+        if (is_file($file)) {
+            require_once $file;
+            return;
+        }
+    }
+});
 
 $database = new Database();
 $db = $database->getConnection();
 
-include "../inc/class_initialize.php";
+$common = new Common($db);
+$account = new Account($db);
+$auth = new Auth($db);
+$role = new Role($db);
+$setting = new Setting($db);
+$register = new Register($db);
 
-$setting->name="lang" ;
+$setting->name = 'lang';
 $stmt = $setting->showByName();
-$lang = $stmt['value'];
+$lang = is_array($stmt) && !empty($stmt['value']) ? (string) $stmt['value'] : 'en';
 
-foreach (glob("../locale/$lang/*.php") as $row){
-    require "$row";
+$localeFiles = glob(__DIR__ . "/../../locale/{$lang}/*.php") ?: [];
+foreach ($localeFiles as $lFile) {
+    require_once $lFile;
 }
 
-if(filter_input(INPUT_POST, "reg_form")){
-	$email=filter_input(INPUT_POST, "email");
-	
-	$auth->email=$email;
-	$email_exists=$auth->emailExists();	
-	
-	if($email_exists){
-		header("Location: ../../login/auth-register.php?err=mailExists");
-		exit;
-	}
-	
-    $register->email = filter_input(INPUT_POST,"email");
-	
-	$stmt = $register->showAllWhere('id',['email']);
-	$emailTmp="";
-	foreach($stmt as $row){
-		$emailTmp = $row['email'] ;
-	}
+if (filter_input(INPUT_POST, 'reg_form')) {
+    $email = (string) (filter_input(INPUT_POST, 'email', FILTER_SANITIZE_EMAIL) ?? '');
+    $auth->email = $email;
+    $email_exists = $auth->emailExists();
 
-	if((!$emailTmp)||(($emailTmp) && ($expDate<$curDate))){
-			$stmt=$register->delete('email');
-			if(!$stmt){
-				header("Location: ../../auth-register.php?err=noRegDelete");
-				exit;
-			}else {
-				$expFormat = mktime(date("H")+2, date("i"), date("s"), date("m") ,date("d"), date("Y"));
-				$expDate = date("Y-m-d H:i:s",$expFormat);
-				
-				$token = md5($email);
-				$addToken= substr(md5(uniqid(rand(),1)),3,10);
-				$token = $token . $addToken;
-				$register->token=$token;
-				$register->expDate = $expDate ;
-                $register->username=filter_input(INPUT_POST,"username");
-                $password=filter_input(INPUT_POST,"password");
-                $password_hash = password_hash($password, PASSWORD_BCRYPT);
-                $register->password = $password_hash ;
+    if ($email_exists) {
+        header('Location: ../../login/auth-register.php?err=mailExists');
+        exit;
+    }
 
-				$register->avatar="default.png";
-				
-				require "accountDetails.php";
+    $register->email = $email;
+    $stmt = $register->showAllWhere('id', ['email']);
+    $emailTmp = '';
+    $expDate = '';
+    if ($stmt) {
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($row) {
+            $emailTmp = (string) ($row['email'] ?? '');
+            $expDate = (string) ($row['expDate'] ?? '');
+        }
+    }
 
-				$details_arr = [] ;
-				$details_opt_arr = [] ;
+    $curDate = date('Y-m-d H:i:s');
 
-				foreach($account_details as $item){
-					$details_arr[] = array("$item" => "".$_POST[$item]."");
-				}
+    if (empty($emailTmp) || ($expDate < $curDate)) {
+        $register->delete('email');
 
-				$details_str = serialize($details_arr);
-				$register->details = $details_str;
+        $expDateNew = date('Y-m-d H:i:s', time() + 7200);
+        $token = bin2hex(random_bytes(32));
 
-				foreach($account_details_opt as $item){
-					$details_opt_arr[] = array("$item" => "".$_POST[$item]."");
-				}
-				$details_opt_str = serialize($details_opt_arr);
-				$register->details_opt = $details_opt_str ;
+        $register->token = $token;
+        $register->expDate = $expDateNew;
+        $register->username = (string) (filter_input(INPUT_POST, 'username', FILTER_DEFAULT) ?? '');
 
-				if($register->insert(['email','username','password','avatar','details','details_opt','token','expDate'])){
-					
-				$url = $_SERVER['SERVER_NAME'];
+        $password = (string) (filter_input(INPUT_POST, 'password', FILTER_DEFAULT) ?? '');
+        $register->password = password_hash($password, PASSWORD_DEFAULT);
+        $register->avatar = 'default.png';
 
-				$setting->name="noreply";
-				$stmt=$setting->showAllWhere('id',['name']);
-				$row=$stmt->fetch(PDO::FETCH_ASSOC);
-				$from=$row['value'];
+        $accountDetailsFile = __DIR__ . '/../../core/accountDetails.php';
+        if (!is_file($accountDetailsFile)) {
+            $accountDetailsFile = __DIR__ . '/../../../core/accountDetails.php';
+        }
+        if (is_file($accountDetailsFile)) {
+            require $accountDetailsFile;
+        }
 
-				$setting->name="noreply" ;
-				$stmt = $setting->showByName();
-				$noreply = $stmt['value'];
+        $details_arr = [];
+        if (isset($account_details) && is_array($account_details)) {
+            foreach ($account_details as $item) {
+                $details_arr[] = [$item => (string) ($_POST[$item] ?? '')];
+            }
+        }
+        $register->details = !empty($details_arr) ? serialize($details_arr) : null;
 
-				$from = $noreply ;
+        $details_opt_arr = [];
+        if (isset($account_details_opt) && is_array($account_details_opt)) {
+            foreach ($account_details_opt as $item) {
+                $details_opt_arr[] = [$item => (string) ($_POST[$item] ?? '')];
+            }
+        }
+        $register->details_opt = !empty($details_opt_arr) ? serialize($details_opt_arr) : null;
 
-				// To send HTML mail, the Content-type header must be set
-				$headers  = 'MIME-Version: 1.0' . "\r\n";
-				$headers .= 'Content-type: text/html; charset=iso-8859-1' . "\r\n";
-				// Create email headers
-				$headers .= 'From: '.$from."\r\n".
-				'Reply-To: '.$from."\r\n" .
-				'X-Mailer: PHP/' . phpversion();
+        if ($register->insert(['email', 'username', 'password', 'avatar', 'details', 'details_opt', 'token', 'expDate'])) {
+            $url = $_SERVER['SERVER_NAME'] ?? 'localhost';
+            $setting->name = 'noreply';
+            $stmt = $setting->showByName();
+            $from = is_array($stmt) && !empty($stmt['value']) ? (string) $stmt['value'] : 'noreply@example.com';
 
-				$output=$reg_block1;
-				$output.='<p><a href="http://'.$url.'/login/auth-register.php?email='.$email.'&token='.$token.'&op=reg" target="_blank">http://'.$url.'/login/auth-register.php?email='.$email.'&token='.$token.'&op=reg</a></p>';		
-				$output.=$reg_block2;
+            $headers = "MIME-Version: 1.0\r\n";
+            $headers .= "Content-type: text/html; charset=utf-8\r\n";
+            $headers .= "From: {$from}\r\n";
+            $headers .= "Reply-To: {$from}\r\n";
+            $headers .= 'X-Mailer: PHP/' . phpversion();
 
-				$to= $email; 
-				$subject=$reg_mail_subject ;
+            $regUrl = "http://{$url}/login/auth-register.php?email=" . urlencode($email) . "&token={$token}&op=reg";
+            $output = ($reg_block1 ?? '') . "<p><a href=\"{$regUrl}\" target=\"_blank\">{$regUrl}</a></p>" . ($reg_block2 ?? '');
 
-				
-				if (mail ($to, $subject, $output, $headers)) {
-					header("Location: ../../login/auth-register.php?msg=sentRegMail");
-					exit;
-				} else {
-					header("Location: ../../login/auth-register.php?err=errSendMail");
-					exit;
-				}
-			
-			}else{	
-				
-				header("Location: ../../login/auth-register.php?err=noReg");
-				exit;
-			}
-		}
-		} else{
-			header("Location: ../../login/auth-register.php?err=errRegRequest");
-			exit;
-		}
+            $subject = $reg_mail_subject ?? 'Account Confirmation';
 
-	}else if(filter_input(INPUT_POST, "reg_role")){
+            if (@mail($email, $subject, $output, $headers)) {
+                header('Location: ../../login/auth-register.php?msg=sentRegMail');
+                exit;
+            }
 
-		$role_id = filter_input(INPUT_POST, "role");
-		$role->id = $role_id ;
-		$rolename = $role->showRolenameById();
+            header('Location: ../../login/auth-register.php?err=errSendMail');
+            exit;
+        }
 
-		$setting->name = "reg_role" ;
-		$setting->value = $rolename ;
-		if(!$setting->updateValue()){
-			header("Location: ../index.php?p=setRegister&err=regRoleNotUpdated");
-			exit;
-		}else{
-			header("Location: ../index.php?p=setRegister&msg=regRoleUpdated");
-			exit;
-		}
-	
+        header('Location: ../../login/auth-register.php?err=noReg');
+        exit;
+    }
 
-	}else{
-header("Location: ../../login/auth-register.php?msg=errPost");
-exit;
+    header('Location: ../../login/auth-register.php?err=errRegRequest');
+    exit;
 }
+
+if (filter_input(INPUT_POST, 'reg_role')) {
+    $role_id = (int) (filter_input(INPUT_POST, 'role', FILTER_VALIDATE_INT) ?? 0);
+    $role->id = $role_id;
+    $rolename = $role->showRolenameById() ?? '';
+
+    $setting->name = 'reg_role';
+    $setting->value = $rolename;
+    if ($setting->updateValue()) {
+        header('Location: ../index.php?p=setRegister&msg=regRoleUpdated');
+        exit;
+    }
+
+    header('Location: ../index.php?p=setRegister&err=regRoleNotUpdated');
+    exit;
+}
+
+header('Location: ../../login/auth-register.php?msg=errPost');
 exit;
-
-?>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-?>

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 ##############    Damares    ###############
 #                                          #
 #    A backend project by DM WebLab        #
@@ -8,244 +10,166 @@
 #                                          #
 ############################################
 
-require '../../vendor/autoload.php';
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+spl_autoload_register(static function (string $class): void {
+    $file = __DIR__ . "/../class/{$class}.php";
+    if (is_file($file)) {
+        require_once $file;
+    }
+});
+
+require_once __DIR__ . '/prefix.php';
+
+$database = new Database();
+$db = $database->getConnection();
+
+$setting = new Setting($db);
+$doc = new Doc($db);
+
+if (!empty($prefix)) {
+    $setting->prx = $prefix . '_';
+    $doc->prx = $prefix . '_';
+}
+
+if (is_file(__DIR__ . '/../../vendor/autoload.php')) {
+    require_once __DIR__ . '/../../vendor/autoload.php';
+} elseif (is_file(__DIR__ . '/../vendor/autoload.php')) {
+    require_once __DIR__ . '/../vendor/autoload.php';
+}
 
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
-spl_autoload_register('autoloader');
-
-function autoloader($class)
-{
-    include("../class/$class.php");
-}
-
-require "../core/prefix.php";
-
-$database = new Database();
-$db = $database->getConnection();
-include "../inc/class_initialize.php";
-
-//$setting->name = "debug";
-//$dbg = $setting->showAllWhere('id', ['name']);
-//$row_debug = $dbg->fetch(PDO::FETCH_ASSOC);
-//extract($row_debug);
-
-$mail = new PHPMailer(true);
-
-/*if ($row_debug['value'] == 1) {
-    $debug = new \bdk\Debug(array(
-        'collect' => true,
-        'output' => true,
-    ));
-}*/
-
-// check the language set
-$setting->name = "lang";
-$stmt = $setting->showByName();
-$lang = $stmt['value'];
+// Locale loading
+$setting->name = 'lang';
+$stmtLang = $setting->showByName();
+$lang = is_array($stmtLang) && !empty($stmtLang['value']) ? (string) $stmtLang['value'] : 'it';
 $_SESSION['lang'] = $lang;
 
-
-foreach (glob("../locale/$lang/*.php") as $row) {
-    require "$row";
+$localeFiles = glob(__DIR__ . "/../locale/{$lang}/*.php") ?: [];
+foreach ($localeFiles as $locFile) {
+    require_once $locFile;
 }
 
-/* if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['recaptcha_response'])) {
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    header('Location: ../../index.php?err=errPost');
+    exit;
+}
 
+$recaptchaSecret = '6Lf5qX4tAAAAAHCtgQlg9TiOHHOeQItDMwZ0_Xuq';
+$recaptchaResponse = (string) ($_POST['g-recaptcha-response'] ?? '');
 
-    $recaptcha_url = 'https://www.google.com/recaptcha/api/siteverify';
-    $recaptcha_secret = '6LetcWAtAAAAAH52Fj00DbbGbjFaxeI-_rkHYX9c';
-    $recaptcha_response = $_POST['recaptcha_response'];
+if ($recaptchaResponse === '') {
+    header('Location: ../../index.php?err=errRecaptcha');
+    exit;
+}
 
-    // Istanziare e decodificare la richiesta POST:      
+$recaptchaUrl = 'https://www.google.com/recaptcha/api/siteverify';
+$data = [
+    'secret'   => $recaptchaSecret,
+    'response' => $recaptchaResponse,
+    'remoteip' => $_SERVER['REMOTE_ADDR'] ?? null,
+];
 
-    $recaptcha = file_get_contents($recaptcha_url . '?secret=' . $recaptcha_secret . '&response=' . $recaptcha_response);
-    $recaptcha = json_decode($recaptcha);
+$options = [
+    'http' => [
+        'header'  => "Content-type: application/x-www-form-urlencoded\r\n",
+        'method'  => 'POST',
+        'content' => http_build_query($data),
+        'timeout' => 10,
+    ],
+];
 
-    // Azioni da compiere basate sul punteggio ottenuto:      
+$context = stream_context_create($options);
+$result = @file_get_contents($recaptchaUrl, false, $context);
+$recaptcha = $result ? json_decode($result, false) : null;
 
-    if ($recaptcha->score >= 0.5) { */
+if (!$recaptcha || empty($recaptcha->success)) {
+    header('Location: ../../index.php?err=errRecaptcha');
+    exit;
+}
 
-    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+$patientName = trim((string) filter_input(INPUT_POST, 'name'));
+$email = trim((string) filter_input(INPUT_POST, 'email'));
+$phone = trim((string) filter_input(INPUT_POST, 'phone'));
+$notes = trim((string) (filter_input(INPUT_POST, 'notes') ?? ''));
+$reasonId = (int) filter_input(INPUT_POST, 'reason_id');
 
-    $recaptcha_secret = '6Lf5qX4tAAAAAHCtgQlg9TiOHHOeQItDMwZ0_Xuq';
-    $recaptcha_response = $_POST['g-recaptcha-response'] ?? '';
+$doc->table = 'doc_contact_reason';
+$doc->id = $reasonId;
+$stmtReason = $doc->showAllWhere('id', ['id']);
+$rowReason = $stmtReason->fetch(PDO::FETCH_ASSOC);
+$reasonName = $rowReason ? (string) ($rowReason['name'] ?? 'Richiesta generica') : 'Richiesta generica';
 
-    if (empty($recaptcha_response)) {
-        die('Verifica reCAPTCHA non completata.');
-    }
-
-    $recaptcha_url = 'https://www.google.com/recaptcha/api/siteverify';
-
-    $data = [
-        'secret'   => $recaptcha_secret,
-        'response' => $recaptcha_response,
-        'remoteip' => $_SERVER['REMOTE_ADDR'] ?? null
-    ];
-
-    $options = [
-        'http' => [
-            'header'  => "Content-type: application/x-www-form-urlencoded\r\n",
-            'method'  => 'POST',
-            'content' => http_build_query($data)
-        ]
-    ];
-
-    $context = stream_context_create($options);
-
-    $result = file_get_contents($recaptcha_url, false, $context);
-    $recaptcha = json_decode($result);
-
-    if (!$recaptcha || empty($recaptcha->success)) {
-        die('Verifica reCAPTCHA fallita.');
-    }
-    if ($recaptcha->success) {
-
-        $patient_name      = filter_input(INPUT_POST, 'name');
-        $email     = filter_input(INPUT_POST, 'email');
-        $phone     = filter_input(INPUT_POST, 'phone');
-        $notes     = filter_input(INPUT_POST, 'notes') ?? '';
-
-        $reason_id = filter_input(INPUT_POST, 'reason_id');
-
-        $doc->table = 'doc_contact_reason';
-        $doc->id = $reason_id;
-        $stmt_reason = $doc->showAllWhere('id', ['id']);
-        $row_reason = $stmt_reason->fetch(PDO::FETCH_ASSOC);
-        extract($row_reason);
-
-        try {
-
-            /*
-    |--------------------------------------------------------------------------
-    | Configurazione SMTP
-    |--------------------------------------------------------------------------
-    */
-
-            $mail->isSMTP();
-
-            $mail->Host       = 'mail.dmweblab.com ';
-            $mail->SMTPAuth   = true;
-            $mail->Username   = 'noreply@dmweblab.com';
-            $mail->Password   = 'Salomon-86';
-
-            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
-            $mail->Port       = 587;
-
-            $mail->CharSet = 'UTF-8';
-
-
-            /*
-    |--------------------------------------------------------------------------
-    | Mittente e destinatari
-    |--------------------------------------------------------------------------
-    */
-
-            $mail->setFrom(
-                'noreply@dmweblab.com',
-                $row_reason['name']
-            );
-
-            // medico
-            $mail->addAddress(
-                'dottoressa.crosetto@gmail.com',
-                'Dottoressa'
-            );
-
-            // eventualmente copia segreteria
-            //$mail->addCC('segreteria@dominio.it');
-
-
-            /*
-    |--------------------------------------------------------------------------
-    | Contenuto
-    |--------------------------------------------------------------------------
-    */
-
-            $mail->isHTML(true);
-
-            $mail->Subject = $row_reason['name'];
-
-            $body = '
-
-    <html>
-    <body style="font-family:Arial,sans-serif; font-size:1.5em">
-        <p>
-            <strong>Nome:</strong><br>
-            ' . $patient_name . '
-        </p>
-
-        <p>
-            <strong>Email:</strong><br>
-            ' . htmlspecialchars($email) . '
-        </p>
-
-        <p>
-            <strong>Telefono:</strong><br>
-            ' . htmlspecialchars($phone) . '
-        </p>
-
-        <p>
-            <strong>Note:</strong><br>
-            ' . nl2br(htmlspecialchars($notes)) . '
-        </p>
-
-
-    </body>
-    </html>
-
-    ';
-
-            $result = $doc->validateAttachment($_FILES['attachment']);
-
-            if ($result !== true) {
-
-                header('Location: ../../index.php?err=' . $result);
-                exit;
-            }
-
-            // Da qui in poi sei sicuro che il file è valido
-
-            $mail->Body = $body;
-
-            /*
-|--------------------------------------------------------------------------
-| Allegato
-|--------------------------------------------------------------------------
-*/
-
-            if (
-                isset($_FILES['attachment']) &&
-                $_FILES['attachment']['error'] === UPLOAD_ERR_OK
-            ) {
-
-                $mail->addAttachment(
-                    $_FILES['attachment']['tmp_name'],
-                    $_FILES['attachment']['name']
-                );
-            }
-
-            /*
-|--------------------------------------------------------------------------
-| Invio
-|--------------------------------------------------------------------------
-*/
-
-            $mail->send();
-
-            header('Location: ../../index.php?msg=sentContactMail');
-            exit;
-        } catch (Exception $e) {
-
-            header('Location: ../../index.php?err=errSendContactMail');
-            exit;
-        }
-    } else {
-        header("Location: ../../index.php?err=errRecaptcha");
+if (isset($_FILES['attachment'])) {
+    $attachCheck = $doc->validateAttachment($_FILES['attachment']);
+    if ($attachCheck !== true) {
+        header('Location: ../../index.php?err=' . urlencode((string) $attachCheck));
         exit;
     }
-} else {
-    header("Location: ../../index.php?msg=errPost");
+}
+
+try {
+    if (class_exists(PHPMailer::class)) {
+        $mail = new PHPMailer(true);
+        $mail->isSMTP();
+        $mail->Host = 'mail.dmweblab.com';
+        $mail->SMTPAuth = true;
+        $mail->Username = 'noreply@dmweblab.com';
+        $mail->Password = 'Salomon-86';
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+        $mail->Port = 587;
+        $mail->CharSet = 'UTF-8';
+
+        $mail->setFrom('noreply@dmweblab.com', $reasonName);
+        $mail->addAddress('dottoressa.crosetto@gmail.com', 'Dottoressa');
+        $mail->addReplyTo($email, $patientName);
+
+        $mail->isHTML(true);
+        $mail->Subject = $reasonName;
+
+        $safeName = htmlspecialchars($patientName, ENT_QUOTES, 'UTF-8');
+        $safeEmail = htmlspecialchars($email, ENT_QUOTES, 'UTF-8');
+        $safePhone = htmlspecialchars($phone, ENT_QUOTES, 'UTF-8');
+        $safeNotes = nl2br(htmlspecialchars($notes, ENT_QUOTES, 'UTF-8'));
+
+        $body = <<<HTML
+<html>
+<body style="font-family:Arial,sans-serif; font-size:1.1em; line-height:1.6; color:#333;">
+    <h3 style="color:#0d6efd;">Nuova richiesta da modulo contatti</h3>
+    <p><strong>Tipo richiesta:</strong> {$reasonName}</p>
+    <p><strong>Nome:</strong> {$safeName}</p>
+    <p><strong>Email:</strong> {$safeEmail}</p>
+    <p><strong>Telefono:</strong> {$safePhone}</p>
+    <p><strong>Note:</strong><br>{$safeNotes}</p>
+</body>
+</html>
+HTML;
+
+        $mail->Body = $body;
+
+        if (
+            isset($_FILES['attachment']) &&
+            is_array($_FILES['attachment']) &&
+            ($_FILES['attachment']['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_OK &&
+            is_file((string) $_FILES['attachment']['tmp_name'])
+        ) {
+            $mail->addAttachment(
+                (string) $_FILES['attachment']['tmp_name'],
+                (string) $_FILES['attachment']['name']
+            );
+        }
+
+        $mail->send();
+    }
+
+    header('Location: ../../index.php?msg=sentContactMail');
+    exit;
+} catch (\Throwable $e) {
+    error_log('Contact Mail Error: ' . $e->getMessage());
+    header('Location: ../../index.php?err=errSendContactMail');
     exit;
 }

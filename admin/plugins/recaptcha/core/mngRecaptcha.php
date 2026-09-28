@@ -1,5 +1,6 @@
 <?php
 
+declare(strict_types=1);
 
 ##############    Damares    ###############
 #                                          #
@@ -9,53 +10,43 @@
 #                                          #
 ############################################
 
-spl_autoload_register('autoloader');
-
-function autoloader($class){
-	include("../class/$class.php");
-}
+spl_autoload_register(static function (string $class): void {
+    $candidates = [
+        __DIR__ . "/../../class/{$class}.php",
+        __DIR__ . "/../class/{$class}.php",
+        __DIR__ . "/../../../class/{$class}.php",
+    ];
+    foreach ($candidates as $file) {
+        if (is_file($file)) {
+            require_once $file;
+            return;
+        }
+    }
+});
 
 $database = new Database();
 $db = $database->getConnection();
 
-include "../inc/class_initialize.php";
+$common = new Common($db);
+$verify = new Common($db);
+$verify->table = 'verify';
 
-if(filter_input(INPUT_POST, "recap")){
+if (filter_input(INPUT_POST, 'recap')) {
+    $public = (string) (filter_input(INPUT_POST, 'public', FILTER_DEFAULT) ?? '');
+    $secret = (string) (filter_input(INPUT_POST, 'secret', FILTER_DEFAULT) ?? '');
 
-	$public=filter_input(INPUT_POST, "public");
-	$secret=filter_input(INPUT_POST, "secret");
+    $verify->public = $public;
+    $verify->secret = $secret;
+    $verify->id = 1;
 
-	$verify->public = $public ;
-	$verify->secret = $secret ;
-	$verify->id = 1 ;
+    if ($verify->update(['public', 'secret'], 'id')) {
+        header('Location: ../index.php?p=setRecaptcha&msg=recapMod');
+        exit;
+    }
 
-	if($verify->update(['public','secret'],'id')){
-		header("Location: ../index.php?p=setRecaptcha&msg=recapMod");
-		exit;
-	}else{
-		header("Location: ../index.php?p=setRecaptcha&err=recapNoMod");
-		exit;
-	}
-	
-}else{
-	header("Location: ../index.php?p=setRecaptcha&err=noPost");
+    header('Location: ../index.php?p=setRecaptcha&err=recapNoMod');
     exit;
 }
 
-
-?>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-?>
+header('Location: ../index.php?p=setRecaptcha&err=noPost');
+exit;

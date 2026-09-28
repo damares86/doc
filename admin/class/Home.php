@@ -1,4 +1,6 @@
-<?php 
+<?php
+
+declare(strict_types=1);
 
 ##############    Damares    ###############
 #                                          #
@@ -8,13 +10,9 @@
 #                                          #
 ############################################
 
-class Home extends Common{
-
-    public $table = "home";
-
-  
-    
-
+class Home extends Common
+{
+    public string $table = 'home';
+    public ?string $content = null;
+    public int|string|null $size = null;
 }
-
-?>

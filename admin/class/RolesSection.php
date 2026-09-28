@@ -1,4 +1,6 @@
-<?php 
+<?php
+
+declare(strict_types=1);
 
 ##############    Damares    ###############
 #                                          #
@@ -8,54 +10,47 @@
 #                                          #
 ############################################
 
-class RolesSection extends Common {
+class RolesSection extends Common
+{
+    public string $table = 'roles_section';
+    public int|string|null $section_id = null;
+    public int|string|null $role_id = null;
 
-    public $table = "rolesSection" ;
-    public $section_id ;
-    public $role_id ;
+    /**
+     * Insert role section mapping.
+     *
+     * @return bool
+     */
+    public function insertRoleSection(): bool
+    {
+        if ($this->conn === null) {
+            return false;
+        }
 
+        $query = "INSERT INTO {$this->prx}{$this->table} SET section_id = :section_id, role_id = :role_id";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindValue(':section_id', $this->section_id);
+        $stmt->bindValue(':role_id', $this->role_id);
 
-
-function insertRoleSection(){
-    
-    $query = "INSERT INTO " .$this->prx. $this->table."
-    SET 
-    section_id = :section_id,
-    role_id = :role_id"; 
-    
-    $stmt = $this->conn->prepare( $query );
-
-    $stmt->bindParam(":section_id", $this->section_id);
-    $stmt->bindParam(":role_id", $this->role_id);
-   
-    if($stmt->execute()){
-        return true ;
-    }else{
-        return false ;
+        return $stmt->execute();
     }
-    
+
+    /**
+     * Show all permissions for the given role_id.
+     *
+     * @return PDOStatement|false
+     */
+    public function showAllPermission(): PDOStatement|false
+    {
+        if ($this->conn === null) {
+            return false;
+        }
+
+        $query = "SELECT * FROM {$this->prx}{$this->table} WHERE role_id = :role_id ORDER BY id ASC";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindValue(':role_id', $this->role_id);
+        $stmt->execute();
+
+        return $stmt;
+    }
 }
-
-
-function showAllPermission(){
-
-    $query = "SELECT *
-        FROM " .$this->prx. $this->table."
-        WHERE role_id = :role_id
-        ORDER BY id ASC"; 
-// print_r($query);
-// exit;
-    $stmt = $this->conn->prepare( $query );
-
-    $stmt->bindParam(":role_id", $this->role_id);
-
-    $stmt->execute();
-
-    return $stmt;
-}
-
-
-
-}
-
-?>

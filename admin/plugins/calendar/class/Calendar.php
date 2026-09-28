@@ -1,4 +1,6 @@
-<?php 
+<?php
+
+declare(strict_types=1);
 
 ##############    Damares    ###############
 #                                          #
@@ -8,15 +10,17 @@
 #                                          #
 ############################################
 
-class Calendar extends Common{
-
-    public $event_title ;
-    public $page_origin ;
-    public $cat_id ;
-    public $color;
-    public $cat_name ;
-    public $cat_color ;
-
+class Calendar extends Common
+{
+    public string $table = 'calendar_events';
+    public ?string $event_title = null;
+    public ?string $page_origin = null;
+    public int|string|null $cat_id = null;
+    public ?string $color = null;
+    public ?string $cat_name = null;
+    public ?string $cat_color = null;
+    public ?string $start = null;
+    public ?string $end = null;
+    public ?string $note = null;
+    public ?string $url = null;
 }
-
-?>

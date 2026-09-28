@@ -1,4 +1,6 @@
-<?php 
+<?php
+
+declare(strict_types=1);
 
 ##############    Damares    ###############
 #                                          #
@@ -8,73 +10,73 @@
 #                                          #
 ############################################
 
-class AccountRoles extends Common{
+class AccountRoles extends Common
+{
+    public string $table = 'accounts_roles';
+    public int|string|null $account_id = null;
+    public int|string|null $role_id = null;
+    public ?string $redirect = null;
 
-    public $table = "accountsRoles" ;
-    public $account_id ;
-    public $role_id ;
-    public $redirect ;
+    /**
+     * Show role ID for current account_id.
+     *
+     * @return int|string|null
+     */
+    public function showAccountRolesId(): int|string|null
+    {
+        if ($this->conn === null || empty($this->account_id)) {
+            return null;
+        }
 
-
-    public function showAccountRolesId(){
-
-        $query = "SELECT role_id
-                FROM " .$this->prx. $this->table . "
-                WHERE account_id = :account_id
-                ORDER BY role_id ASC";
+        $query = "SELECT role_id FROM {$this->prx}{$this->table} WHERE account_id = :account_id ORDER BY role_id ASC LIMIT 1";
         $stmt = $this->conn->prepare($query);
-
-        $stmt->bindParam(":account_id",$this->account_id);
-        
+        $stmt->bindValue(':account_id', $this->account_id);
         $stmt->execute();
-        
-        
+
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
-    
-        if($stmt){
-            return $this->role_id = $row['role_id'];
-        } else {
-            return false ;
+        if (is_array($row) && isset($row['role_id'])) {
+            $this->role_id = $row['role_id'];
+            return $this->role_id;
         }
-        
+
+        return null;
     }
-    
-    
-    public function showRolesAccountId(){
 
-        $query = "SELECT account_id
-                    FROM " .$this->prx. $this->table . "
-                    WHERE role_id = :role_id";
+    /**
+     * Show accounts for a role ID.
+     *
+     * @return PDOStatement|false
+     */
+    public function showRolesAccountId(): PDOStatement|false
+    {
+        if ($this->conn === null || empty($this->role_id)) {
+            return false;
+        }
 
+        $query = "SELECT account_id FROM {$this->prx}{$this->table} WHERE role_id = :role_id";
         $stmt = $this->conn->prepare($query);
-
-        $stmt->bindParam(":role_id",$this->role_id);
-        
+        $stmt->bindValue(':role_id', $this->role_id);
         $stmt->execute();
 
-        if($stmt){
-            return $stmt ;
-        } else {
-            return false ;
+        return $stmt;
+    }
+
+    /**
+     * Count accounts assigned to a role ID.
+     *
+     * @return int
+     */
+    public function countRoleAccounts(): int
+    {
+        if ($this->conn === null || empty($this->role_id)) {
+            return 0;
         }
-        
-    }
 
-    public function countRoleAccounts(){
-    
-        $query = "SELECT id FROM ".$this->prx.$this->table."
-                 WHERE role_id = :role_id";
-    
-        $stmt = $this->conn->prepare( $query );
-
-        $stmt->bindParam(":role_id",$this->role_id);
+        $query = "SELECT COUNT(*) FROM {$this->prx}{$this->table} WHERE role_id = :role_id";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindValue(':role_id', $this->role_id);
         $stmt->execute();
-    
-        $num = $stmt->rowCount();
-    
-        return $num;
-    }
-    
-}
 
-?>
+        return (int) $stmt->fetchColumn();
+    }
+}

@@ -1,20 +1,24 @@
 <?php
-    $stmt=$verify->showAll('id');
-    $row=$stmt->fetch(PDO::FETCH_ASSOC);
-    $public=$row['public'];
+
+declare(strict_types=1);
+
+$verify->table = 'verify';
+$stmt = $verify->showAll('id');
+$row = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : null;
+$public = (string) ($row['public'] ?? '');
 ?>
 
-
-
-<script src="https://www.google.com/recaptcha/api.js?render=<?=$public?>"> </script>
+<script src="https://www.google.com/recaptcha/api.js?render=<?= urlencode($public) ?>"></script>
 
 <script>
     grecaptcha.ready(function() {
-        grecaptcha.execute('<?=$public?>', {
+        grecaptcha.execute(<?= json_encode($public) ?>, {
             action: 'submit'
         }).then(function(token) {
             var recaptchaResponse = document.getElementById('recaptchaResponse');
-            recaptchaResponse.value = token;
+            if (recaptchaResponse) {
+                recaptchaResponse.value = token;
+            }
         });
     });
 </script>

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 ##############    Damares    ###############
 #                                          #
 #    A backend project by DM WebLab        #
@@ -8,55 +10,59 @@
 #                                          #
 ############################################
 
-class Plugin extends Common{
+class Plugin extends Common
+{
+    public string $table = 'plugins';
+    public ?string $pluginname = null;
+    public ?string $description = null;
+    public int|string|null $installed = 0;
+    public int|string|null $active = 0;
 
-    public $table = "plugins" ;
-    public $pluginname ;
-    public $description ;
-    public $installed ;
-    public $active ;
-    
-    public function showPluginnameById(){
-        $query = "SELECT pluginname
-                FROM ".$this->table."
-                WHERE id = :id";
+    /**
+     * Show plugin name by ID.
+     *
+     * @return string|null
+     */
+    public function showPluginnameById(): ?string
+    {
+        if ($this->conn === null || empty($this->id)) {
+            return null;
+        }
 
-       $stmt = $this->conn->prepare($query);
+        $query = "SELECT pluginname FROM {$this->prx}{$this->table} WHERE id = :id LIMIT 1";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindValue(':id', $this->id);
+        $stmt->execute();
 
-       $stmt->bindParam(":id",$this->id) ;
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (is_array($row) && isset($row['pluginname'])) {
+            return (string) $row['pluginname'];
+        }
 
-       $stmt->execute() ;
-       $row = $stmt->fetch(PDO::FETCH_ASSOC);
-       
-       if($row){
-           return $this->id = $row['pluginname'];
-       } else {
-           return false ;
-       }
-    
+        return null;
     }
 
-    public function isActive(){
-        $query = "SELECT active
-                FROM ".$this->table."
-                WHERE pluginname = :pluginname";
+    /**
+     * Check if plugin is active.
+     *
+     * @return int|bool
+     */
+    public function isActive(): int|bool
+    {
+        if ($this->conn === null || empty($this->pluginname)) {
+            return false;
+        }
 
-       $stmt = $this->conn->prepare($query);
+        $query = "SELECT active FROM {$this->prx}{$this->table} WHERE pluginname = :pluginname LIMIT 1";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindValue(':pluginname', $this->pluginname);
+        $stmt->execute();
 
-       $stmt->bindParam(":pluginname",$this->pluginname) ;
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (is_array($row) && isset($row['active'])) {
+            return (int) $row['active'];
+        }
 
-       $stmt->execute() ;
-       $row = $stmt->fetch(PDO::FETCH_ASSOC);
-       
-       if($row){
-           return $row['active'];
-       } else {
-           return false ;
-       }
-    
+        return false;
     }
-
-
 }
-
-?>

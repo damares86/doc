@@ -1,8 +1,12 @@
 <?php
 
-require __DIR__ . "/coreConfig.php";
+declare(strict_types=1);
 
-header('Content-Type: application/json');
+require __DIR__ . '/coreConfig.php';
+
+header('Content-Type: application/json; charset=utf-8');
+
+$prx = $prx ?? '';
 
 try {
     $query = "
@@ -16,14 +20,14 @@ try {
         e.cat_id,
         c.cat_color AS color,
         c.cat_name AS cat_name
-    FROM calendar_events e
-    LEFT JOIN calendar_cat c ON e.cat_id = c.id
+    FROM {$prx}calendar_events e
+    LEFT JOIN {$prx}calendar_cat c ON e.cat_id = c.id
     ";
 
     $stmt = $db->query($query);
     $events = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    echo json_encode($events);
+    echo json_encode($events ?: []);
 } catch (PDOException $e) {
     echo json_encode([]);
 }

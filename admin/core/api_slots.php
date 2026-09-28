@@ -1,49 +1,32 @@
 <?php
 
+declare(strict_types=1);
 
-spl_autoload_register('autoloader');
+spl_autoload_register(static function (string $class): void {
+    $file = __DIR__ . "/../class/{$class}.php";
+    if (is_file($file)) {
+        require_once $file;
+    }
+});
 
-function autoloader($class)
-{
-	include("../class/$class.php");
-}
-
-require "../core/prefix.php";
+require_once __DIR__ . '/prefix.php';
 
 $database = new Database();
 $db = $database->getConnection();
-include "../inc/class_initialize.php";
-
-$setting->name = "debug";
-$dbg = $setting->showAllWhere('id', ['name']);
-$row_debug = $dbg->fetch(PDO::FETCH_ASSOC);
-extract($row_debug);
-
-if ($row_debug['value'] == 1) {
-	require '../vendor/autoload.php';		// If installed via composer
-	$debug = new \bdk\Debug(array(
-		'collect' => true,
-		'output' => true,
-	));
+$doc = new Doc($db);
+if (!empty($prefix)) {
+    $doc->prx = $prefix . '_';
 }
 
-// check the language set
-$setting->name = "lang";
-$stmt = $setting->showByName();
-$lang = $stmt['value'];
-$_SESSION['lang'] = $lang;
+header('Content-Type: application/json; charset=UTF-8');
 
-
-foreach (glob("../locale/$lang/*.php") as $row) {
-	require "$row";
+$date = (string) ($_GET['date'] ?? date('Y-m-d'));
+if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+    $date = date('Y-m-d');
 }
-
-header('Content-Type: application/json');
-
-$date = $_GET['date'] ?? date('Y-m-d');
 
 // Giorno della settimana (1=Lunedì ... 7=Domenica)
-$weekday = date('N', strtotime($date));
+$weekday = (int) date('N', (int) strtotime($date));
 
 $doc->weekday = $weekday;
 $doc->table = 'doc_timetable';
@@ -51,11 +34,9 @@ $doc->table = 'doc_timetable';
 $stmt = $doc->showAllWhere('id', ['weekday']);
 $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
-// Se non esiste alcuna configurazione considero non libero
 $free = false;
-
 if ($row) {
-    $free = ((int)$row['booking'] === 0);
+    $free = ((int) ($row['booking'] ?? 1) === 0);
 }
 
 $slots = $doc->getAvailableSlots($db, $date);
@@ -63,5 +44,5 @@ $slots = $doc->getAvailableSlots($db, $date);
 echo json_encode([
     'date'  => $date,
     'free'  => $free,
-    'slots' => $slots
-]);
+    'slots' => $slots,
+], JSON_THROW_ON_ERROR);

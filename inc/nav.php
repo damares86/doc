@@ -1,67 +1,50 @@
+<?php
+
+declare(strict_types=1);
+
+$currentPage = $page_name ?? 'index';
+?>
 <!-- Footer Nav -->
 <div class="footer-nav-area" id="footerNav">
   <div class="container px-0">
-    <!-- Footer Content -->
     <div class="footer-nav position-relative">
       <ul class="h-100 d-flex align-items-center justify-content-between ps-0">
-        <?php
-          $active = $page_name == 'index' ? 'class="active"' : '' ;
-        ?>
-        <li <?= $active ?>>
+        <li <?= $currentPage === 'index' ? 'class="active"' : '' ?>>
           <a href="index.php">
             <i class="ti ti-home"></i>
-            <span <?= $active ?>>Home</span>
+            <span <?= $currentPage === 'index' ? 'class="active"' : '' ?>>Home</span>
           </a>
         </li>
 
-        <?php
-          $active = $page_name == 'booking' ? 'class="active"' : '' ;
-        ?>
-        <li <?= $active ?>>
+        <li <?= $currentPage === 'booking' ? 'class="active"' : '' ?>>
           <a href="booking.php">
             <i class="ti ti-calendar"></i>
-            <span <?= $active ?>>Prenotazione</span>
+            <span <?= $currentPage === 'booking' ? 'class="active"' : '' ?>>Prenotazione</span>
           </a>
         </li>
 
-        <?php
-          $active = $page_name == 'info' ? 'class="active"' : '' ;
-        ?>
-        <li <?= $active ?>>
+        <li <?= $currentPage === 'info' ? 'class="active"' : '' ?>>
           <a href="info.php">
             <i class="ti ti-info-square-rounded"></i>
-            <span <?= $active ?>>Informazioni</span>
+            <span <?= $currentPage === 'info' ? 'class="active"' : '' ?>>Informazioni</span>
           </a>
         </li>
 
-        <?php
-          $active = $page_name == 'contact' ? 'class="active"' : '' ;
-        ?>
-        <li <?= $active ?>>
+        <li <?= $currentPage === 'contact' ? 'class="active"' : '' ?>>
           <a href="contact.php">
             <i class="ti ti-pencil"></i>
-            <span <?= $active ?>>Richieste</span>
+            <span <?= $currentPage === 'contact' ? 'class="active"' : '' ?>>Richieste</span>
           </a>
         </li>
 
-        <!--   <li>
-            <a href="elements.html">
-              <i class="ti ti-heart"></i>
-              <span>Elements</span>
-            </a>
-          </li> -->
-        <?php
-        if ($adminUser > 0) {
-        ?>
+        <?php if (!empty($adminUser)): ?>
           <li>
             <a href="admin">
               <i class="ti ti-settings"></i>
               <span>Admin area</span>
             </a>
           </li>
-        <?php
-        }
-        ?>
+        <?php endif; ?>
       </ul>
     </div>
   </div>
