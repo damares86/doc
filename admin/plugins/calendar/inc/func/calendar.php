@@ -163,7 +163,7 @@ if (!isset($calendar) || !($calendar instanceof Calendar)) {
           <label class="form-check-label fw-bold" for="eventIsRecurring"><?= htmlspecialchars((string) ($cal_repeat ?? 'Repeat event'), ENT_QUOTES, 'UTF-8') ?></label>
         </div>
 
-        <div id="addRecurrenceBox" class="border rounded p-3 mb-3 bg-light" style="display: none;">
+        <div id="eventRecurrenceBox" class="border rounded p-3 mb-3 bg-light" style="display: none;">
           <div class="row g-2 mb-2">
             <div class="col-md-6">
               <label class="form-label small fw-bold"><?= htmlspecialchars((string) ($cal_freq ?? 'Frequency'), ENT_QUOTES, 'UTF-8') ?></label>
@@ -178,12 +178,12 @@ if (!isset($calendar) || !($calendar instanceof Calendar)) {
               <label class="form-label small fw-bold"><?= htmlspecialchars((string) ($cal_repeat_every ?? 'Repeat every'), ENT_QUOTES, 'UTF-8') ?></label>
               <div class="input-group input-group-sm">
                 <input type="number" class="form-control" id="eventRecurrenceInterval" name="recurrence_interval" value="1" min="1" max="99">
-                <span class="input-group-text" id="addRecurrenceIntervalLabel"><?= htmlspecialchars((string) ($cal_unit_weeks ?? 'week(s)'), ENT_QUOTES, 'UTF-8') ?></span>
+                <span class="input-group-text" id="eventRecurrenceIntervalLabel"><?= htmlspecialchars((string) ($cal_unit_weeks ?? 'week(s)'), ENT_QUOTES, 'UTF-8') ?></span>
               </div>
             </div>
           </div>
 
-          <div id="addDaysContainer" class="mb-2">
+          <div id="eventDaysContainer" class="mb-2">
             <label class="form-label small fw-bold d-block"><?= htmlspecialchars((string) ($cal_days_label ?? 'On days'), ENT_QUOTES, 'UTF-8') ?></label>
             <div class="btn-group btn-group-sm w-100" role="group">
               <?php foreach (['MO' => ($cal_day_mo ?? 'Lun'), 'TU' => ($cal_day_tu ?? 'Mar'), 'WE' => ($cal_day_we ?? 'Mer'), 'TH' => ($cal_day_th ?? 'Gio'), 'FR' => ($cal_day_fr ?? 'Ven'), 'SA' => ($cal_day_sa ?? 'Sab'), 'SU' => ($cal_day_su ?? 'Dom')] as $dKey => $dLabel): ?>
@@ -198,15 +198,15 @@ if (!isset($calendar) || !($calendar instanceof Calendar)) {
             <label class="form-label small fw-bold"><?= htmlspecialchars((string) ($cal_end_repeat ?? 'End repeat'), ENT_QUOTES, 'UTF-8') ?></label>
             <div>
               <div class="form-check form-check-inline">
-                <input class="form-check-input" type="radio" name="add_end_type" id="addEndNever" value="never" checked>
-                <label class="form-check-label small" for="addEndNever"><?= htmlspecialchars((string) ($cal_end_never ?? 'Never'), ENT_QUOTES, 'UTF-8') ?></label>
+                <input class="form-check-input" type="radio" name="add_end_type" id="eventEndNever" value="never" checked>
+                <label class="form-check-label small" for="eventEndNever"><?= htmlspecialchars((string) ($cal_end_never ?? 'Never'), ENT_QUOTES, 'UTF-8') ?></label>
               </div>
               <div class="form-check form-check-inline">
-                <input class="form-check-input" type="radio" name="add_end_type" id="addEndUntil" value="until">
-                <label class="form-check-label small" for="addEndUntil"><?= htmlspecialchars((string) ($cal_end_until ?? 'Until'), ENT_QUOTES, 'UTF-8') ?></label>
+                <input class="form-check-input" type="radio" name="add_end_type" id="eventEndUntil" value="until">
+                <label class="form-check-label small" for="eventEndUntil"><?= htmlspecialchars((string) ($cal_end_until ?? 'Until'), ENT_QUOTES, 'UTF-8') ?></label>
               </div>
             </div>
-            <div id="addUntilDateBox" class="mt-2" style="display: none;">
+            <div id="eventUntilDateBox" class="mt-2" style="display: none;">
               <input type="datetime-local" class="form-control form-control-sm" id="eventRecurrenceUntil" name="recurrence_until">
             </div>
           </div>
@@ -293,8 +293,8 @@ if (!isset($calendar) || !($calendar instanceof Calendar)) {
     // Event listeners per Add Recurrence
     document.getElementById('eventIsRecurring').addEventListener('change', () => updateRecurrenceUI('event'));
     document.getElementById('eventRecurrenceFreq').addEventListener('change', () => updateRecurrenceUI('event'));
-    document.getElementById('addEndNever').addEventListener('change', () => updateRecurrenceUI('event'));
-    document.getElementById('addEndUntil').addEventListener('change', () => updateRecurrenceUI('event'));
+    document.getElementById('eventEndNever').addEventListener('change', () => updateRecurrenceUI('event'));
+    document.getElementById('eventEndUntil').addEventListener('change', () => updateRecurrenceUI('event'));
 
     // Event listeners per Detail/Edit Recurrence
     document.getElementById('detailIsRecurring').addEventListener('change', () => updateRecurrenceUI('detail'));
@@ -392,7 +392,7 @@ if (!isset($calendar) || !($calendar instanceof Calendar)) {
         document.getElementById('eventIsRecurring').checked = false;
         document.getElementById('eventRecurrenceInterval').value = 1;
         document.getElementById('eventRecurrenceFreq').value = 'WEEKLY';
-        document.getElementById('addEndNever').checked = true;
+        document.getElementById('eventEndNever').checked = true;
         document.getElementById('eventRecurrenceUntil').value = '';
         updateRecurrenceUI('event');
 
@@ -420,7 +420,7 @@ if (!isset($calendar) || !($calendar instanceof Calendar)) {
         formData.delete('recurrence_interval');
         formData.delete('recurrence_days');
         formData.delete('recurrence_until');
-      } else if (document.getElementById('addEndNever').checked) {
+      } else if (document.getElementById('eventEndNever').checked) {
         formData.delete('recurrence_until');
       }
 
