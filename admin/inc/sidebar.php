@@ -151,8 +151,9 @@
                                                 if ($page == $row1['link']) {
                                                     $active1 = "active";
                                                 }
-                                ?>
-                                                <li class="<?= $active1 ?>"><a href="index.php?p=<?= $row1['link'] ?>" data-parent-id="<?= $parent_id ?>" <?= $display ?>>
+                                                $childLink = ((string) $row1['link'] === 'addBooking') ? '../booking.php' : 'index.php?p=' . $row1['link'];
+                                                ?>
+                                                <li class="<?= $active1 ?>"><a href="<?= $childLink ?>" data-parent-id="<?= $parent_id ?>" <?= $display ?>>
                                                         <i class="bi bi-<?= $row1['icon'] ?>"></i>
                                                         <span>
                                                             <?php

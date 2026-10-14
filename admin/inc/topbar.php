@@ -124,9 +124,10 @@ $roleName = htmlspecialchars((string) ($_SESSION['rolename'] ?? ''), ENT_QUOTES,
                                                 $childLabel = (string) $$locale_label;
                                             }
                                         }
+                                        $childHref = ((string) $row1['link'] === 'addBooking') ? '../booking.php' : 'index.php?p=' . urlencode((string) $row1['link']);
                                         ?>
                                         <li class="submenu-item topbar <?= $active1 ?>" <?= $display ?>>
-                                          <a href="index.php?p=<?= urlencode((string) $row1['link']) ?>" class="submenu-link">
+                                          <a href="<?= $childHref ?>" class="submenu-link">
                                             <i class="bi bi-<?= htmlspecialchars((string) ($row1['icon'] ?? 'circle'), ENT_QUOTES, 'UTF-8') ?>"></i>
                                             <span><?= htmlspecialchars($childLabel, ENT_QUOTES, 'UTF-8') ?></span>
                                           </a>

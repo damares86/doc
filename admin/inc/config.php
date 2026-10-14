@@ -142,6 +142,11 @@ if (empty($page)) {
 }
 $page = preg_replace('/[^a-zA-Z0-9_-]/', '', (string) $page);
 
+if ($page === 'addBooking') {
+    header('Location: ../booking.php');
+    exit;
+}
+
 // Check page tree hierarchy
 $pageLabel = '';
 $pageLink = '';
