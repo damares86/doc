@@ -6,22 +6,22 @@ require_once __DIR__ . '/inc/header.php';
 require_once __DIR__ . '/inc/sidebar.php';
 
 if (!isset($doc) || !($doc instanceof Doc)) {
-    $doc = new Doc($db);
-    if (!empty($prefix)) {
-        $doc->prx = $prefix . '_';
-    }
+  $doc = new Doc($db);
+  if (!empty($prefix)) {
+    $doc->prx = $prefix . '_';
+  }
 }
 
 $page_name = 'booking';
 
 $date = (string) ($_GET['date'] ?? date('Y-m-d'));
 if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
-    $date = date('Y-m-d');
+  $date = date('Y-m-d');
 }
 
 $weekday = (int) date('N', (int) strtotime($date));
 if ($weekday >= 6) {
-    $date = date('Y-m-d', (int) strtotime('next monday', (int) strtotime($date)));
+  $date = date('Y-m-d', (int) strtotime('next monday', (int) strtotime($date)));
 }
 
 $today = date('Y-m-d');
@@ -35,7 +35,7 @@ $row = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : null;
 
 $free = false;
 if ($row) {
-    $free = ((int) ($row['booking'] ?? 1) === 0);
+  $free = ((int) ($row['booking'] ?? 1) === 0);
 }
 
 $doc->table = 'doc_reason';
@@ -113,9 +113,21 @@ $reasons = $stmtReasons ? $stmtReasons->fetchAll(PDO::FETCH_ASSOC) : [];
                 <label class="form-label">Motivo della visita <span class="text-danger">*</span></label>
                 <select class="form-select form-control-clicked" id="defaultSelect" name="reason_id" required>
                   <option value="" selected disabled>---</option>
-                  <?php foreach ($reasons as $reason): ?>
-                    <option value="<?= (int) $reason['id'] ?>"><?= htmlspecialchars((string) $reason['name'], ENT_QUOTES, 'UTF-8') ?></option>
-                  <?php endforeach; ?>
+                  <?php
+                  $doc->table = "doc_reason";
+                  $stmt = $doc->showAll('id');
+
+                  while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                    $id = (int) $row['id'];
+                    $name = htmlspecialchars($row['name'], ENT_QUOTES, 'UTF-8');
+
+                    $dataAttribute = ($id === 4)
+                      ? 'data-requires-date="2026-11-01"'
+                      : '';
+
+                    echo "<option value=\"$id\" $dataAttribute>$name</option>";
+                  }
+                  ?>
                 </select>
               </div>
 

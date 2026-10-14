@@ -127,17 +127,34 @@ function updateNavigationButtons() {
 }
 
 function openBookingModal(date, time) {
-  document.getElementById('bookingDate').value = date;
-  document.getElementById('bookingTime').value = time;
+    document.getElementById('bookingDate').value = date;
+    document.getElementById('bookingTime').value = time;
 
-  document.getElementById('bookingDateLabel').textContent =
-    formatDateLabel(date) + ' alle ore ' + time;
+    document.getElementById('bookingDateLabel').textContent =
+        formatDateLabel(date) + ' alle ore ' + time;
 
-  const modal = new bootstrap.Modal(
-    document.getElementById('bookingModal')
-  );
+    // Gestione della motivazione speciale
+    const reasonSelect = document.getElementById('defaultSelect');
+    const specialOption = reasonSelect.querySelector(
+        'option[data-requires-date]'
+    );
 
-  modal.show();
+    if (specialOption) {
+        const requiredDate = specialOption.dataset.requiresDate;
+
+        specialOption.hidden = date < requiredDate;
+
+        // Se la motivazione non è più disponibile, resetta la selezione
+        if (date < requiredDate && reasonSelect.value === specialOption.value) {
+            reasonSelect.value = '';
+        }
+    }
+
+    const modal = new bootstrap.Modal(
+        document.getElementById('bookingModal')
+    );
+
+    modal.show();
 }
 
 document.getElementById('prevDay').addEventListener('click', function () {
