@@ -17,7 +17,14 @@ $query_create_table = "CREATE TABLE IF NOT EXISTS {$prefix}calendar_events (
     end DATETIME NOT NULL,
     note TEXT DEFAULT NULL,
     url VARCHAR(255) DEFAULT NULL,
-    cat_id INT(5) DEFAULT NULL
+    cat_id INT(5) DEFAULT NULL,
+    is_recurring TINYINT(1) NOT NULL DEFAULT 0,
+    recurrence_freq VARCHAR(20) DEFAULT NULL,
+    recurrence_interval INT(11) NOT NULL DEFAULT 1,
+    recurrence_days VARCHAR(50) DEFAULT NULL,
+    recurrence_until DATETIME DEFAULT NULL,
+    recurrence_count INT(11) DEFAULT NULL,
+    rrule VARCHAR(255) DEFAULT NULL
 ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS {$prefix}calendar_cat (

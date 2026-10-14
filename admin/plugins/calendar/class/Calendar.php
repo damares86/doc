@@ -23,4 +23,38 @@ class Calendar extends Common
     public ?string $end = null;
     public ?string $note = null;
     public ?string $url = null;
+    public int $is_recurring = 0;
+    public ?string $recurrence_freq = null;
+    public int $recurrence_interval = 1;
+    public ?string $recurrence_days = null;
+    public ?string $recurrence_until = null;
+    public ?int $recurrence_count = null;
+    public ?string $rrule = null;
+
+    /**
+     * Costruisce una stringa RRULE standard RFC 5545 compatibile con iCalendar e FullCalendar.
+     */
+    public static function buildRruleString(
+        string $freq,
+        int $interval = 1,
+        ?string $byDay = null,
+        ?string $until = null,
+        ?int $count = null
+    ): string {
+        $parts = ['FREQ=' . strtoupper($freq), 'INTERVAL=' . max(1, $interval)];
+        if (!empty($byDay)) {
+            $parts[] = 'BYDAY=' . strtoupper($byDay);
+        }
+        if (!empty($until)) {
+            try {
+                $untilDt = new DateTime($until);
+                $parts[] = 'UNTIL=' . $untilDt->format('Ymd\THis\Z');
+            } catch (Throwable) {
+                // Ignore invalid datetime string
+            }
+        } elseif ($count !== null && $count > 0) {
+            $parts[] = 'COUNT=' . $count;
+        }
+        return implode(';', $parts);
+    }
 }

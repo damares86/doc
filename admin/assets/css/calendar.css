@@ -1,0 +1,42 @@
+.fc .fc-button-primary {
+    background-color: #008db1;
+}
+
+.fc-toolbar {
+    text-transform: capitalize;
+}
+
+.color-label {
+    display: inline-block;
+    width: 40px;
+    height: 40px;
+    border-radius: 5px;
+    position: relative;
+    cursor: pointer;
+    margin-right: 8px;
+}
+
+.color-label .checkmark {
+    position: absolute;
+    top: 20px;
+    left: 18px;
+    font-size: 20px;
+    color: white;
+    display: none;
+}
+
+.btn-check:checked+.color-label .checkmark {
+    display: block;
+}
+
+.btn-check:checked+.color-label {
+    outline: 2px solid #000;
+}
+
+.fc {
+    min-height: 700px;
+}
+
+.fc .fc-daygrid-day-frame {
+    min-height: 100px;
+}

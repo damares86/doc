@@ -2,7 +2,14 @@
 
 declare(strict_types=1);
 
-$event_id = filter_input(INPUT_GET, 'idToMod', FILTER_VALIDATE_INT);
+
+
+if (!isset($calendar) || !($calendar instanceof Calendar)) {
+    $calendar = new Calendar($db);
+    if (!empty($prefix)) {
+        $calendar->prx = $prefix . '_';
+    }
+}$event_id = filter_input(INPUT_GET, 'idToMod', FILTER_VALIDATE_INT);
 $calendar->id = $event_id;
 $calendar->table = 'calendar_cat';
 $stmt = $calendar->showAllWhere('id', ['id']);

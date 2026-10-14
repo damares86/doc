@@ -2,7 +2,14 @@
 
 declare(strict_types=1);
 
-$calendar->table = 'calendar_cat';
+
+
+if (!isset($calendar) || !($calendar instanceof Calendar)) {
+    $calendar = new Calendar($db);
+    if (!empty($prefix)) {
+        $calendar->prx = $prefix . '_';
+    }
+}$calendar->table = 'calendar_cat';
 $events_cat = $calendar->showAll('id');
 ?>
 <div class="page-title">

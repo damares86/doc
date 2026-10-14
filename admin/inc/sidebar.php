@@ -41,7 +41,7 @@
             if ($plugin->itemExists('pluginname') && $plugin->isActive() == 1) {*/
             ?>
                 <a href="../" class="btn icon btn-primary shadow mx-3 px-3 text-white">
-                    <i class="bi bi-arrow-left-circle"></i> &nbsp; Vai al sito<?= $mc_backsite ?>
+                    <i class="bi bi-arrow-left-circle"></i> &nbsp; Vai al sito
                 </a>
             <?php
           /*  }*/

@@ -40,6 +40,32 @@ $cal_modal_delete_body = "Sei sicuro che vuoi eliminare questo evento?" ;
 $cal_add = "Aggiungi evento" ;
 $cal_option = " (opzionale)" ;
 
+// recurrence
+$cal_repeat = "Ripeti evento";
+$cal_recurring_badge = "Evento ricorrente (Serie)";
+$cal_recurring_notice = "Le modifiche o l'eliminazione avranno effetto su tutte le occorrenze della serie.";
+$cal_freq = "Frequenza";
+$cal_freq_daily = "Giornaliera";
+$cal_freq_weekly = "Settimanale";
+$cal_freq_monthly = "Mensile";
+$cal_freq_yearly = "Annuale";
+$cal_repeat_every = "Ripeti ogni";
+$cal_unit_days = "giorno/i";
+$cal_unit_weeks = "settimana/e";
+$cal_unit_months = "mese/i";
+$cal_unit_years = "anno/i";
+$cal_days_label = "Nei giorni";
+$cal_end_repeat = "Fine ripetizione";
+$cal_end_never = "Mai";
+$cal_end_until = "Fino al";
+$cal_day_mo = "Lun";
+$cal_day_tu = "Mar";
+$cal_day_we = "Mer";
+$cal_day_th = "Gio";
+$cal_day_fr = "Ven";
+$cal_day_sa = "Sab";
+$cal_day_su = "Dom";
+
 
 /// MSG ALERT
 
