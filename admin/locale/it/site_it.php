@@ -37,7 +37,7 @@ $err_noReset = "Erorre nel reset della password. Contattaci" ;
 $err_errResetRequest = "Nessuna richiesta di reset in sospeso o link scaduto" ;
 $err_keyDelErr = "Password modificata, ma c'è stato qualche problema. Contattaci" ;
 $err_pswEditErr = "Password non modificata. Contattaci" ;
-$err_noLogin = "Devi essere loggato per vedere quella pagina<br>SUGGERIMENTO: se sei sicuro delle credenziali prova a selezionare 'Ricordami'" ;
+$err_noLogin = "Devi essere loggato per vedere quella pagina.  SUGGERIMENTO: se sei sicuro delle credenziali prova a selezionare 'Ricordami'" ;
 $err_errUserPsw = "Username o password errati" ;
 
 //  ALERT: MSG 

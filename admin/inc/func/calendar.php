@@ -3,16 +3,58 @@
 declare(strict_types=1);
 
 if (!isset($calendar) || !($calendar instanceof Calendar)) {
-    $calendar = new Calendar($db);
-    if (!empty($prefix)) {
-        $calendar->prx = $prefix . '_';
-    }
+  $calendar = new Calendar($db);
+  if (!empty($prefix)) {
+    $calendar->prx = $prefix . '_';
+  }
 }
 ?>
 <script src='script/index.global.js'></script>
 <script src='script/locales-all.global.js'></script>
 <script src='script/rrule.min.js'></script>
 <script src='script/fullcalendar.rrule.global.min.js'></script>
+
+<style>
+@media (max-width: 767.98px) {
+    /* Barra degli strumenti su più righe */
+    .fc .fc-header-toolbar {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+    }
+
+    /* Titolo in prima riga */
+    .fc .fc-toolbar-chunk:nth-child(2) {
+        order: 1;
+        margin-bottom: 0;
+    }
+
+    /* Frecce di navigazione nella seconda riga */
+    .fc .fc-toolbar-chunk:nth-child(1) {
+        order: 2;
+    }
+
+    /* Pulsanti di visualizzazione nella terza riga */
+    .fc .fc-toolbar-chunk:nth-child(3) {
+        order: 3;
+        margin-top: 0;
+    }
+
+    /* Permette ai pulsanti di andare a capo */
+    .fc .fc-toolbar-chunk {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 4px;
+    }
+
+    /* Riduce lo spazio orizzontale del calendario */
+    .container.calendar {
+        --bs-gutter-x: 0;
+    }
+}
+</style>
 
 <!-- Modale dettaglio evento -->
 <div class="modal fade" id="eventDetailModal" tabindex="-1" aria-labelledby="eventDetailLabel" aria-hidden="true">
@@ -227,21 +269,21 @@ if (!isset($calendar) || !($calendar instanceof Calendar)) {
             $calendar->table = 'calendar_cat';
             $stmt = $calendar->showAll('id');
             if ($stmt instanceof PDOStatement) {
-                while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-                    $catId = (int) ($row['id'] ?? 0);
-                    $catColor = (string) ($row['cat_color'] ?? '#008db1');
-                    $catName = (string) ($row['cat_name'] ?? '');
-                    $isDefault = $catId === 1 ? 'checked' : '';
-                    ?>
-                    <div class="col-2 text-center">
-                      <input type="radio" class="btn-check" name="calendar_color" value="<?= $catId ?>" id="cal_<?= $catId ?>" <?= $isDefault ?> autocomplete="off" hidden>
-                      <label class="color-label shadow my-1" for="cal_<?= $catId ?>" style="background-color: <?= htmlspecialchars($catColor, ENT_QUOTES, 'UTF-8') ?>;">
-                        <span class="checkmark">✔</span>
-                      </label>
-                      <span style="color:<?= htmlspecialchars($catColor, ENT_QUOTES, 'UTF-8') ?>; font-weight:bold"><?= htmlspecialchars($catName, ENT_QUOTES, 'UTF-8') ?></span>
-                    </div>
-                    <?php
-                }
+              while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                $catId = (int) ($row['id'] ?? 0);
+                $catColor = (string) ($row['cat_color'] ?? '#008db1');
+                $catName = (string) ($row['cat_name'] ?? '');
+                $isDefault = $catId === 1 ? 'checked' : '';
+            ?>
+                <div class="col-2 text-center">
+                  <input type="radio" class="btn-check" name="calendar_color" value="<?= $catId ?>" id="cal_<?= $catId ?>" <?= $isDefault ?> autocomplete="off" hidden>
+                  <label class="color-label shadow my-1" for="cal_<?= $catId ?>" style="background-color: <?= htmlspecialchars($catColor, ENT_QUOTES, 'UTF-8') ?>;">
+                    <span class="checkmark">✔</span>
+                  </label>
+                  <span style="color:<?= htmlspecialchars($catColor, ENT_QUOTES, 'UTF-8') ?>; font-weight:bold"><?= htmlspecialchars($catName, ENT_QUOTES, 'UTF-8') ?></span>
+                </div>
+            <?php
+              }
             }
             ?>
           </div>
@@ -312,15 +354,18 @@ if (!isset($calendar) || !($calendar instanceof Calendar)) {
     var calendar = new FullCalendar.Calendar(calendarEl, {
       locale: '<?= htmlspecialchars((string) ($lang ?? 'en'), ENT_QUOTES, 'UTF-8') ?>',
       initialView: isMobile ? 'timeGridDay' : 'timeGridWeek',
+      scrollTime: '08:00:00',
+
       headerToolbar: isMobile ? {
         left: 'prev,next',
         center: 'title',
-        right: 'today,timeGridDay,timeGridWeek,dayGridMonth'
+        right: 'today,timeGridDay,dayGridMonth'
       } : {
         left: 'prev,next today',
         center: 'title',
         right: 'timeGridWeek,timeGridDay,dayGridMonth'
       },
+
       selectable: true,
       events: 'core/get_events.php',
 
@@ -362,7 +407,9 @@ if (!isset($calendar) || !($calendar instanceof Calendar)) {
             document.getElementById('detailRecurrenceUntil').value = '';
           }
         } else {
-          document.querySelectorAll('.detail-day-check').forEach(cb => { cb.checked = false; });
+          document.querySelectorAll('.detail-day-check').forEach(cb => {
+            cb.checked = false;
+          });
           document.getElementById('detailEndNever').checked = true;
           document.getElementById('detailRecurrenceUntil').value = '';
         }
